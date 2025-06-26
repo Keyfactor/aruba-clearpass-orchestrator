@@ -1,8 +1,10 @@
 using ArubaClearPassOrchestrator.Models.Aruba.ClusterServer;
 using ArubaClearPassOrchestrator.Models.Aruba.ServerCert;
+using ArubaClearPassOrchestrator.Models.Keyfactor;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
 using Moq;
+using Newtonsoft.Json;
 using Xunit.Abstractions;
 
 namespace ArubaClearPassOrchestrator.UnitTests;
@@ -10,7 +12,6 @@ namespace ArubaClearPassOrchestrator.UnitTests;
 public class InventoryTests : BaseOrchestratorTest
 {
     private readonly Inventory _sut;
-    
     private readonly Mock<SubmitInventoryUpdate> _submitInventoryUpdateMock = new();
 
     public InventoryTests(ITestOutputHelper output) : base(output)
@@ -27,12 +28,16 @@ public class InventoryTests : BaseOrchestratorTest
     [Fact]
     public void ProcessJob_WhenServerDoesNotExist_ReturnsJobFailureStatus()
     {
+        var properties = new ArubaCertificateStoreProperties()
+        {
+            ServiceName = "HTTPS(RSA)",
+        };
         var config = new InventoryJobConfiguration()
         {
             CertificateStoreDetails = new CertificateStore()
             {
                 ClientMachine = "example.com",
-                Properties = "{}",
+                Properties = JsonConvert.SerializeObject(properties),
                 StorePath = "clearpass.localhost",
             },
             ServerPassword = "ServerPassword",
@@ -56,12 +61,16 @@ public class InventoryTests : BaseOrchestratorTest
     [Fact]
     public void ProcessJob_WhenCertificateRetrievalFails_ReturnsJobFailureStatus()
     {
+        var properties = new ArubaCertificateStoreProperties()
+        {
+            ServiceName = "HTTPS(RSA)",
+        };
         var config = new InventoryJobConfiguration()
         {
             CertificateStoreDetails = new CertificateStore()
             {
                 ClientMachine = "example.com",
-                Properties = "{}",
+                Properties = JsonConvert.SerializeObject(properties),
                 StorePath = "clearpass.localhost",
             },
             ServerPassword = "ServerPassword",
@@ -76,7 +85,7 @@ public class InventoryTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.GetServerCertificate(It.IsAny<string>(), It.IsAny<string>()))
+        ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)"))
             .Throws(new HttpRequestException("That didn't work!"));
         var response = _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
 
@@ -87,12 +96,16 @@ public class InventoryTests : BaseOrchestratorTest
     [Fact]
     public void ProcessJob_WhenSuccessful_SubmitsCertificateToInventory()
     {
+        var properties = new ArubaCertificateStoreProperties()
+        {
+            ServiceName = "HTTPS(RSA)",
+        };
         var config = new InventoryJobConfiguration()
         {
             CertificateStoreDetails = new CertificateStore()
             {
                 ClientMachine = "example.com",
-                Properties = "{}",
+                Properties = JsonConvert.SerializeObject(properties),
                 StorePath = "clearpass.localhost",
             },
             ServerPassword = "ServerPassword",
@@ -107,7 +120,7 @@ public class InventoryTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.GetServerCertificate(It.IsAny<string>(), It.IsAny<string>())).Returns(
+        ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)")).Returns(
             new GetServerCertificateResponse()
             {
                 CertFile = "-----BEGIN CERTIFICATE-----\\nMIIGnjCCBIagAwIBAgIUWVsbKtLOVZcDGrUO29kcrK02p2wwDQ\\n-----END CERTIFICATE-----"
@@ -121,12 +134,16 @@ public class InventoryTests : BaseOrchestratorTest
     [Fact]
     public void ProcessJob_WhenSuccessful_ReturnsSuccessfulJob()
     {
+        var properties = new ArubaCertificateStoreProperties()
+        {
+            ServiceName = "HTTPS(RSA)",
+        };
         var config = new InventoryJobConfiguration()
         {
             CertificateStoreDetails = new CertificateStore()
             {
                 ClientMachine = "example.com",
-                Properties = "{}",
+                Properties = JsonConvert.SerializeObject(properties),
                 StorePath = "clearpass.localhost",
             },
             ServerPassword = "ServerPassword",
@@ -141,7 +158,7 @@ public class InventoryTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.GetServerCertificate(It.IsAny<string>(), It.IsAny<string>())).Returns(
+        ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)")).Returns(
             new GetServerCertificateResponse()
             {
                 CertFile = "-----BEGIN CERTIFICATE-----\\nMIIGnjCCBIagAwIBAgIUWVsbKtLOVZcDGrUO29kcrK02p2wwDQ\\n-----END CERTIFICATE-----"

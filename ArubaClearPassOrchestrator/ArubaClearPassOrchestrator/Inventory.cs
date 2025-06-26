@@ -10,11 +10,11 @@ using Newtonsoft.Json;
 
 namespace ArubaClearPassOrchestrator;
 
-public class Inventory : IInventoryJobExtension
+public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
 {
     public string ExtensionName => "Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Inventory";
     private readonly ILogger _logger;
-    
+
     private IArubaClient? _arubaClient;
     private readonly IPAMSecretResolver _resolver;
 
@@ -30,7 +30,7 @@ public class Inventory : IInventoryJobExtension
         _arubaClient = arubaClient;
         _resolver = resolver;
     }
-    
+
     public JobResult ProcessJob(InventoryJobConfiguration jobConfiguration, SubmitInventoryUpdate submitInventoryUpdate)
     {
         try
@@ -41,39 +41,17 @@ public class Inventory : IInventoryJobExtension
             var properties =
                 JsonConvert.DeserializeObject<ArubaCertificateStoreProperties>(jobConfiguration.CertificateStoreDetails
                     .Properties);
-            var hostname = jobConfiguration.CertificateStoreDetails.ClientMachine;
-            var serverUsername = ResolvePAMField(jobConfiguration.ServerUsername, "Server Username");
-            var serverPassword = ResolvePAMField(jobConfiguration.ServerPassword, "Server Password");
-
-            if (_arubaClient == null)
-            {
-                _logger.LogTrace("Instantiating the Aruba Client");
-                _arubaClient = new ArubaClient(_logger, properties.ServerUseSslEnabled, hostname, serverUsername, serverPassword);
-                _logger.LogTrace("Aruba Client instantiated successfully");
-            }
-
-            _logger.LogTrace("Getting server information from Aruba");
-
-            var servers = _arubaClient.GetClusterServers();
             var storePath = jobConfiguration.CertificateStoreDetails.StorePath;
 
-            _logger.LogDebug($"Number of servers found in Aruba: {servers.Count}");
-            _logger.LogDebug($"Server names found in Aruba: {string.Join(", ", servers.Select(p => $"'{p.Name}'"))}");
+            _arubaClient = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
+                jobConfiguration.CertificateStoreDetails, properties);
 
-            var serverInfo = servers.FirstOrDefault(p => p.Name == storePath);
+            var (serverInfo, jobResult) = GetArubaServerInfo(_logger, _arubaClient, jobConfiguration,
+                jobConfiguration.CertificateStoreDetails);
             if (serverInfo == null)
             {
-                _logger.LogError($"ERROR: Unable to find store '{storePath}' in Aruba system");
-
-                return new JobResult()
-                {
-                    Result = OrchestratorJobStatusJobResult.Failure,
-                    JobHistoryId = jobConfiguration.JobHistoryId,
-                    FailureMessage = $"Unable to find store '{storePath}' in Aruba system"
-                };
+                return jobResult;
             }
-
-            _logger.LogDebug($"Successfully found server '{storePath}' in Aruba. Store UUID: {serverInfo.ServerUuid}");
 
             var certificate = _arubaClient.GetServerCertificate(serverInfo.ServerUuid, properties.ServiceName);
 
@@ -90,7 +68,7 @@ public class Inventory : IInventoryJobExtension
 
             _logger.LogTrace("Submitting certificate information to inventory");
 
-            submitInventoryUpdate.Invoke(new List<CurrentInventoryItem>(){ certificateEntry });
+            submitInventoryUpdate.Invoke(new List<CurrentInventoryItem>() { certificateEntry });
 
             _logger.LogInformation("Inventory job completed successfully");
             _logger.MethodExit();
@@ -112,15 +90,5 @@ public class Inventory : IInventoryJobExtension
                 JobHistoryId = jobConfiguration.JobHistoryId,
             };
         }
-    }
-
-    private string ResolvePAMField(string key, string description)
-    {
-        _logger.MethodEntry();
-        _logger.LogDebug($"Fetching {description} value from PAM");
-        var value = _resolver.Resolve(key);
-        _logger.LogDebug($"Successfully fetched {description} value from PAM");
-        _logger.MethodExit();
-        return value;
     }
 }
