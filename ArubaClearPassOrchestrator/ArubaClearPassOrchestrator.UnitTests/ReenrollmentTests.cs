@@ -16,11 +16,16 @@ public class ReenrollmentTests : BaseOrchestratorTest
 {
     private readonly Reenrollment _sut;
     private readonly Mock<IFileServerClient> _fileServerClientMock = new();
+    private readonly Mock<IFileServerClientFactory> _fileServerClientFactoryMock = new();
     private readonly Mock<SubmitReenrollmentCSR> _submitReenrollmentCSRMock = new();
 
     public ReenrollmentTests(ITestOutputHelper output) : base(output)
     {
-        _sut = new Reenrollment(Logger, ArubaClientMock.Object, _fileServerClientMock.Object, PAMResolverMock.Object);
+        _fileServerClientFactoryMock
+            .Setup(p => p.CreateFileServerClient(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string>()))
+            .Returns(_fileServerClientMock.Object);
+        _sut = new Reenrollment(Logger, ArubaClientMock.Object, _fileServerClientFactoryMock.Object, PAMResolverMock.Object);
     }
 
     [Fact]
@@ -238,6 +243,49 @@ public class ReenrollmentTests : BaseOrchestratorTest
         _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
         
         _fileServerClientMock.Verify(p => p.UploadCertificate("clearpass.localhost_HTTPS(RSA).pfx", It.IsAny<X509Certificate2>()), Times.Once);
+    }
+    
+    [Fact]
+    public void ProcessJob_WhenFileServerIsResolved_ButFileServerClientFactoryReturnsNull_UploadsCertificateToServer()
+    {
+        // This should never happen but doesn't hurt to check this edge case!
+        var properties = new ArubaCertificateStoreProperties()
+        {
+            ServiceName = "HTTPS(RSA)",
+            FileServerType = "S3",
+            FileServerHost = "bogus.com",
+            FileServerUsername = "hocus",
+            FileServerPassword = "pocus",
+            DigestAlgorithm = "SHA-256",
+        };
+        var config = new ReenrollmentJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(properties),
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+        };
+        ArubaClientMock.Setup(p => p.GetClusterServers())
+            .Returns(new List<ClusterServerItem>()
+            {
+                new()
+                {
+                    Name = "clearpass.localhost",
+                    ServerUuid = "fizzbuzz"
+                }
+            });
+        _fileServerClientFactoryMock
+            .Setup(p => p.CreateFileServerClient(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string>()))
+            .Returns((IFileServerClient) null); // If we made it here, we did something wrong!
+
+        var result = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+        Assert.Equal(OrchestratorJobStatusJobResult.Failure, result.Result);
+        Assert.Equal($"Matching file server type 'S3' was found but FileServerClientFactory did not provide a FileServerClient reference", result.FailureMessage);
     }
     
     [Fact]

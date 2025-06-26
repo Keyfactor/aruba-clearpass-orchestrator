@@ -1,3 +1,4 @@
+using System.Security.Cryptography.X509Certificates;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
 using ArubaClearPassOrchestrator.Models.Keyfactor;
 using Keyfactor.Logging;
@@ -16,7 +17,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     private readonly ILogger _logger = LogHandler.GetClassLogger<Reenrollment>();
 
     private IArubaClient? _arubaClient;
-    private IFileServerClient _fileServerClient;
+    private IFileServerClientFactory _fileServerClientFactory;
     private readonly IPAMSecretResolver _resolver;
     
     public Reenrollment(IPAMSecretResolver resolver)
@@ -25,11 +26,11 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         _resolver = resolver;
     }
 
-    public Reenrollment(ILogger logger, IArubaClient arubaClient, IFileServerClient fileServerClient, IPAMSecretResolver resolver)
+    public Reenrollment(ILogger logger, IArubaClient arubaClient, IFileServerClientFactory fileServerClientFactory, IPAMSecretResolver resolver)
     {
         _logger = logger;
         _arubaClient = arubaClient;
-        _fileServerClient = fileServerClient;
+        _fileServerClientFactory = fileServerClientFactory;
         _resolver = resolver;
     }
     
@@ -52,92 +53,41 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             _arubaClient = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
                 jobConfiguration.CertificateStoreDetails, properties);
 
-            var (serverInfo, jobResult) = GetArubaServerInfo(_logger, _arubaClient, jobConfiguration,
+            var (serverInfo, serverInfoFailure) = GetArubaServerInfo(_logger, _arubaClient, jobConfiguration,
                 jobConfiguration.CertificateStoreDetails);
-            if (serverInfo == null)
+            if (serverInfoFailure != null)
             {
-                return jobResult!;
+                return serverInfoFailure;
             }
 
-            var fileServerType = properties.FileServerType;
-            switch (fileServerType)
+            var (fileServerClient, fileServerFailure) = GetFileServerClient(properties);
+            if (fileServerFailure != null)
             {
-                case "S3":
-                    // TODO: Create S3 Client
-                    break;
-                case "File Server":
-                    // TODO: Create File Server Client
-                    break;
-                default:
-                    return new JobResult()
-                    {
-                        Result = OrchestratorJobStatusJobResult.Failure,
-                        FailureMessage = $"Unable to find a matching file server type for '{fileServerType}'",
-                    };
+                return fileServerFailure;
             }
-            
-            _logger.LogDebug($"Successfully resolved file server type {fileServerType}");
 
-            string certificateSignRequest = null;
-            try
+            var (csr, csrFailure) = GetCertificateSigningRequest(servername, encryptionAlgorithm, digestAlgorithm);
+            if (csrFailure != null)
             {
-                _logger.LogDebug($"Creating CSR request in Aruba for server {servername} with encryption algorithm {encryptionAlgorithm} and {digestAlgorithm}");
-                var response = _arubaClient.CreateCertificateSignRequest(servername, encryptionAlgorithm, digestAlgorithm);
-                certificateSignRequest = response.CertificateSignRequest;
-                _logger.LogDebug($"CSR request completed successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unable to create certificate sign request");
-                return new JobResult()
-                {
-                    Result = OrchestratorJobStatusJobResult.Failure,
-                    FailureMessage =
-                        $"An error occurred while performing CSR Generation in Aruba. Error: {ex.Message}"
-                };
+                return csrFailure;
             }
 
             _logger.LogDebug($"Submitting enrollment CSR to Command");
-            var certificate = submitReenrollmentUpdate.Invoke(certificateSignRequest);
+            var certificate = submitReenrollmentUpdate.Invoke(csr);
             _logger.LogDebug($"CSR Enrollment completed successfully");
 
-            // TODO: We need to convert the certificate object into a string somehow
-
-            string certificateUrl = null;
-            try
+            var (certificateUrl, certificateUploadFailure) =
+                UploadCertificateAndGetUrl(servername, service, fileServerClient, certificate);
+            if (certificateUploadFailure != null)
             {
-                var key = $"{servername}_{service}.pfx";
-                _logger.LogDebug($"Uploading certificate to file server under key {key}");
-                certificateUrl = _fileServerClient.UploadCertificate(key, certificate);
-                _logger.LogInformation($"Successfully uploaded certificate to file server under key {key}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unable to upload certificate to file server");
-                return new JobResult()
-                {
-                    Result = OrchestratorJobStatusJobResult.Failure,
-                    FailureMessage =
-                        $"An error occurred while uploading certificate contents to file server: {ex.Message}"
-                };
+                return certificateUploadFailure;
             }
 
-            try
+            var uploadFailure = UpdateServerCertificate(servername, serverInfo!.ServerUuid, service, certificateUrl!);
+            if (uploadFailure != null)
             {
-                _logger.LogDebug($"Updating certificate in Aruba for server {servername} and service {service}");
-                _arubaClient.UpdateServerCertificate(serverInfo.ServerUuid, service, certificateUrl);
-                _logger.LogInformation($"Successfully updated certificate in Aruba for server {servername} and service {service}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unable to update certificate in Aruba");
-                return new JobResult()
-                {
-                    Result = OrchestratorJobStatusJobResult.Failure,
-                    FailureMessage =
-                        $"An error occurred while updating certificate in Aruba: {ex.Message}"
-                };
-            }
+                return uploadFailure;
+            }  
             
             _logger.LogInformation("Re-Enrollment (ODKG) job completed successfully");
             _logger.MethodExit();
@@ -157,5 +107,142 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 JobHistoryId = jobConfiguration.JobHistoryId,
             };
         }
+    }
+
+    /// <summary>
+    /// Gets the appropriate IFileServerClient interface filtered by name.
+    /// </summary>
+    /// <param name="properties"></param>
+    /// <returns>Returns a IFileServerClient if the name matches an existing interface. Otherwise, it returns null with a failed JobResult.</returns>
+    private (IFileServerClient?, JobResult?) GetFileServerClient(ArubaCertificateStoreProperties properties)
+    {
+        var fileServerType = properties.FileServerType;
+        var host = properties.FileServerHost;
+        var username = properties.FileServerUsername;
+        var password = properties.FileServerPassword;
+        IFileServerClient? client;
+        switch (fileServerType)
+        {
+            case "S3":
+            case "File Server":
+                client = _fileServerClientFactory.CreateFileServerClient(fileServerType, host, username, password);
+                break;
+            default:
+                _logger.LogError($"Unable to find a matching file server type for '{fileServerType}'. Please check your certificate store properties and configure the File Server Type to an accepted value. " +
+                                 $"Please consult the orchestrator documentation for more information.");
+                
+                return (null, new JobResult()
+                {
+                    Result = OrchestratorJobStatusJobResult.Failure,
+                    FailureMessage = $"Unable to find a matching file server type for '{fileServerType}'",
+                });
+        }
+
+        if (client == null)
+        {
+            _logger.LogError($"A matching file server type '{fileServerType}' was not provided by the FileServerClientFactory! Please contact Keyfactor Support for assistance.");
+            
+            // This is an edge case where the IFileServerClientFactory was not properly updated with the accepted FileServerType
+            return (null, new JobResult()
+            {
+                Result = OrchestratorJobStatusJobResult.Failure,
+                FailureMessage =
+                    $"Matching file server type '{fileServerType}' was found but FileServerClientFactory did not provide a FileServerClient reference"
+            });
+        }
+            
+        _logger.LogDebug($"Successfully resolved file server type {fileServerType}");
+        return (client, null);
+    }
+
+    /// <summary>
+    /// Creates a certificate signing request within Aruba and returns the resulting certificate result
+    /// </summary>
+    /// <param name="properties"></param>
+    /// <returns>Returns a CSR string if the request succeeds. Otherwise, it returns a null string with a failed JobResult.</returns>
+    private (string?, JobResult?) GetCertificateSigningRequest(string servername, string encryptionAlgorithm, string digestAlgorithm)
+    {
+        string? certificateSignRequest = null;
+        try
+        {
+            _logger.LogDebug($"Creating CSR request in Aruba for server {servername} with encryption algorithm {encryptionAlgorithm} and {digestAlgorithm}");
+            var response = _arubaClient.CreateCertificateSignRequest(servername, encryptionAlgorithm, digestAlgorithm);
+            certificateSignRequest = response.CertificateSignRequest;
+            _logger.LogDebug($"CSR request completed successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to create certificate sign request");
+            return (null, new JobResult()
+            {
+                Result = OrchestratorJobStatusJobResult.Failure,
+                FailureMessage =
+                    $"An error occurred while performing CSR Generation in Aruba. Error: {ex.Message}"
+            });
+        }
+
+        return (certificateSignRequest, null);
+    }
+
+    /// <summary>
+    /// Uploads the certificate contents to the remote file server client.
+    /// </summary>
+    /// <param name="servername"></param>
+    /// <param name="service"></param>
+    /// <param name="fileServerClient"></param>
+    /// <param name="certificate"></param>
+    /// <returns>Returns the certificate URL if the request succeeds. Otherwise, it returns a null string with a failed JobResult.</returns>
+    private (string?, JobResult?) UploadCertificateAndGetUrl(string servername, string service, IFileServerClient fileServerClient, X509Certificate2 certificate)
+    {
+        string? certificateUrl = null;
+        try
+        {
+            var key = $"{servername}_{service}.pfx";
+            _logger.LogDebug($"Uploading certificate to file server under key {key}");
+            certificateUrl = fileServerClient.UploadCertificate(key, certificate);
+            _logger.LogInformation($"Successfully uploaded certificate to file server under key {key}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to upload certificate to file server");
+            return (null, new JobResult()
+            {
+                Result = OrchestratorJobStatusJobResult.Failure,
+                FailureMessage =
+                    $"An error occurred while uploading certificate contents to file server: {ex.Message}"
+            });
+        }
+
+        return (certificateUrl, null);
+    }
+
+    /// <summary>
+    /// Updates the server certificate in Aruba for the appropriate service.
+    /// </summary>
+    /// <param name="servername"></param>
+    /// <param name="serverUuid"></param>
+    /// <param name="service"></param>
+    /// <param name="certificateUrl"></param>
+    /// <returns>Returns a null JobResult object if the request succeeds. Otherwise, it returns a failed JobResult.</returns>
+    private JobResult? UpdateServerCertificate(string servername, string serverUuid, string service, string certificateUrl)
+    {
+        try
+        {
+            _logger.LogDebug($"Updating certificate in Aruba for server {servername} and service {service}");
+            _arubaClient!.UpdateServerCertificate(serverUuid, service, certificateUrl);
+            _logger.LogInformation($"Successfully updated certificate in Aruba for server {servername} and service {service}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to update certificate in Aruba");
+            return new JobResult()
+            {
+                Result = OrchestratorJobStatusJobResult.Failure,
+                FailureMessage =
+                    $"An error occurred while updating certificate in Aruba: {ex.Message}"
+            };
+        }
+
+        return null;
     }
 }
