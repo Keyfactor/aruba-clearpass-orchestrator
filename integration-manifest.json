@@ -67,7 +67,7 @@
               "DependsOn": "",
               "DefaultValue": "",
               "Required": true,
-              "Description": "The base URL for the file server host without the scheme. (i.e. my-server-name.com if the file server URL is https://my-server-name.com)"
+              "Description": "The base URL for the file server host without the scheme. (i.e. my-server-name.com if the file server URL is https://my-server-name.com). If using S3, use the bucket name."
             },
             {
               "Name": "FileServerUsername",

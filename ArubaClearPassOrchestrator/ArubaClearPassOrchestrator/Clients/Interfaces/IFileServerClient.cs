@@ -4,5 +4,5 @@ namespace ArubaClearPassOrchestrator.Clients.Interfaces;
 
 public interface IFileServerClient
 {
-    public string UploadCertificate(string key, X509Certificate2 certificate);
+    public Task<string> UploadCertificate(string key, X509Certificate2 certificate);
 }

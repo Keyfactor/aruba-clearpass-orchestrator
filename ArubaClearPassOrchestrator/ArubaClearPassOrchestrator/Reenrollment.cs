@@ -124,8 +124,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         switch (fileServerType)
         {
             case "S3":
-            case "File Server":
-                client = _fileServerClientFactory.CreateFileServerClient(fileServerType, host, username, password);
+                client = _fileServerClientFactory.CreateFileServerClient(_logger, fileServerType, host, username, password);
                 break;
             default:
                 _logger.LogError($"Unable to find a matching file server type for '{fileServerType}'. Please check your certificate store properties and configure the File Server Type to an accepted value. " +
@@ -199,7 +198,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         {
             var key = $"{servername}_{service}.pfx";
             _logger.LogDebug($"Uploading certificate to file server under key {key}");
-            certificateUrl = fileServerClient.UploadCertificate(key, certificate);
+            certificateUrl = fileServerClient.UploadCertificate(key, certificate).GetAwaiter().GetResult();
             _logger.LogInformation($"Successfully uploaded certificate to file server under key {key}");
         }
         catch (Exception ex)
