@@ -44,7 +44,7 @@ public class InventoryTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -77,7 +77,7 @@ public class InventoryTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -112,7 +112,7 @@ public class InventoryTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -120,7 +120,7 @@ public class InventoryTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)")).Returns(
+        ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)")).ReturnsAsync(
             new GetServerCertificateResponse()
             {
                 CertFile = "-----BEGIN CERTIFICATE-----\\nMIIGnjCCBIagAwIBAgIUWVsbKtLOVZcDGrUO29kcrK02p2wwDQ\\n-----END CERTIFICATE-----"
@@ -150,7 +150,7 @@ public class InventoryTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -158,7 +158,7 @@ public class InventoryTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)")).Returns(
+        ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)")).ReturnsAsync(
             new GetServerCertificateResponse()
             {
                 CertFile = "-----BEGIN CERTIFICATE-----\\nMIIGnjCCBIagAwIBAgIUWVsbKtLOVZcDGrUO29kcrK02p2wwDQ\\n-----END CERTIFICATE-----"

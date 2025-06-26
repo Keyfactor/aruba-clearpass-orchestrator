@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
-namespace ArubaClearPassOrchestrator.UnitTests.TestUtilities;
+namespace ArubaClearPassOrchestrator.Tests.Common.TestUtilities;
 
 public class XunitLoggerProvider : ILoggerProvider
 {

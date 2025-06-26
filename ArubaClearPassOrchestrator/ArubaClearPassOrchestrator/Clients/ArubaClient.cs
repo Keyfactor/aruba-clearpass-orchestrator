@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
 using ArubaClearPassOrchestrator.Models.Aruba.CertSignRequest;
@@ -45,58 +46,136 @@ public class ArubaClient : IArubaClient
         Authenticate();
     }
 
-    public ICollection<ClusterServerItem> GetClusterServers()
+    public async Task<ICollection<ClusterServerItem>> GetClusterServers()
     {
         _logger.MethodEntry();
         
         var url = "/api/cluster/server";
-        _logger.LogInformation($"Getting cluster servers from {_baseUrl}{url}");
+        _logger.LogDebug($"Getting cluster servers from {_baseUrl}{url}");
         
-        var response = _httpClient.GetAsync(url).GetAwaiter().GetResult();
+        var response = await _httpClient.GetAsync(url);
         _logger.LogDebug($"Cluster server request complete. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
 
         response.EnsureSuccessStatusCode();
         
-        _logger.LogInformation("Getting cluster servers request completed successfully.");
+        _logger.LogDebug("Getting cluster servers request completed successfully.");
         
-        var responseJson = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        var responseJson = await response.Content.ReadAsStringAsync();
         var result = JsonConvert.DeserializeObject<GetClusterServerResponse>(responseJson);
         var items = result!.Embedded.Items;
+        
+        _logger.LogDebug($"Cluster server data: {JsonConvert.SerializeObject(items)}");
 
         _logger.MethodExit();
         return items;
     }
 
-    public GetServerCertificateResponse GetServerCertificate(string serverUuid, string serviceName)
+    public async Task<GetServerCertificateResponse> GetServerCertificate(string serverUuid, string serviceName)
     {
-        throw new NotImplementedException();
+        _logger.MethodEntry();
+        
+        var url = $"/api/server-cert/name/{serverUuid}/{serviceName}";
+        _logger.LogDebug($"Getting server certificate from {_baseUrl}{url}");
+        
+        var response = await _httpClient.GetAsync(url);
+        _logger.LogDebug($"Server certificate request complete. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
+
+        response.EnsureSuccessStatusCode();
+        
+        _logger.LogDebug("Server certificate request completed successfully.");
+
+        var responseJson = await response.Content.ReadAsStringAsync();
+        var result = JsonConvert.DeserializeObject<GetServerCertificateResponse>(responseJson);
+        
+        _logger.MethodExit();
+        return result;
     }
 
-    public CreateCertificateSignRequestResponse CreateCertificateSignRequest(string servername, string privateKeyType,
+    public async Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(string servername, string privateKeyType,
         string digestAlgorithm)
     {
-        throw new NotImplementedException();
+        _logger.MethodEntry();
+        
+        var url = $"/api/cert-sign-request";
+        _logger.LogDebug($"Creating a certificate signing request to {_baseUrl}{url}");
+        
+        var password = "foobarbaz"; // TODO: Use BouncyCastle to create the secure password
+        var request = new CreateCertificateSignRequestRequest()
+        {
+            SubjectCN = servername,
+            PrivateKeyPassword = password,
+            PrivateKeyType = privateKeyType,
+            DigestAlgorithm = digestAlgorithm
+        };
+
+        var response = await _httpClient.PostAsync(url, new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json"));
+        _logger.LogDebug($"Certificate signing request complete. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
+
+        response.EnsureSuccessStatusCode();
+        
+        _logger.LogDebug($"Certificate signing request completed successfully.");
+        
+        var responseJson = await response.Content.ReadAsStringAsync();
+        var result = JsonConvert.DeserializeObject<CreateCertificateSignRequestResponse>(responseJson);
+        
+        _logger.MethodExit();
+        return result;
     }
 
-    public void UpdateServerCertificate(string serverUuid, string serviceName, string certificateUrl)
+    public async Task UpdateServerCertificate(string serverUuid, string serviceName, string certificateUrl)
     {
-        throw new NotImplementedException();
+        _logger.MethodEntry();
+        
+        var url = $"/api/server-cert/name/{serverUuid}/{serviceName}";
+        _logger.LogDebug($"Updating server certificate at {_baseUrl}{url}");
+
+        var request = new UpdateServerCertificateRequest()
+        {
+            CertificateUrl = certificateUrl
+        };
+
+        var response = await _httpClient.PutAsync(url, new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json"));
+        _logger.LogDebug($"Server certificate update request complete. Status code {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
+
+        response.EnsureSuccessStatusCode();
+        
+        _logger.LogInformation($"Server certificate for server UUID {serverUuid} on service {serviceName} updated successfully.");
+
+        _logger.MethodExit();
     }
 
-    public void EnableServerCertificate(string serverUuid, string serviceName)
+    public async Task EnableServerCertificate(string serverUuid, string serviceName)
     {
-        throw new NotImplementedException();
+        _logger.MethodEntry();
+        
+        var url = $"/api/server-cert/name/{serverUuid}/{serviceName}/enable";
+        _logger.LogDebug($"Enabling server certificate at {_baseUrl}{url}");
+
+        var response = await _httpClient.PatchAsync(url, null);
+        _logger.LogDebug($"Server certificate enable request completed successfully. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
+
+        response.EnsureSuccessStatusCode();
+
+        _logger.MethodExit();
     }
 
-    public void DisableServerCertificate(string serverUuid, string serviceName)
+    public async Task DisableServerCertificate(string serverUuid, string serviceName)
     {
-        throw new NotImplementedException();
+        _logger.MethodEntry();
+        
+        var url = $"/api/server-cert/name/{serverUuid}/{serviceName}/enable";
+        _logger.LogDebug($"Disabling server certificate at {_baseUrl}{url}");
+
+        var response = await _httpClient.PatchAsync(url, null);
+        _logger.LogDebug($"Server certificate disable request completed successfully. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
+
+        response.EnsureSuccessStatusCode();
+
+        _logger.MethodExit();
     }
 
     private void Authenticate()
     {
-        // TODO: Wrap in a try-catch in case connection is refused
-        
         _logger.MethodEntry();
         
         var httpClient = new HttpClient(_handler)

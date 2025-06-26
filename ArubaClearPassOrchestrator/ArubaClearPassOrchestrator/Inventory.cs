@@ -53,7 +53,7 @@ public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
                 return jobResult;
             }
 
-            var certificate = _arubaClient.GetServerCertificate(serverInfo.ServerUuid, properties.ServiceName);
+            var certificate = _arubaClient.GetServerCertificate(serverInfo.ServerUuid, properties.ServiceName).GetAwaiter().GetResult();
 
             var certificateEntry = new CurrentInventoryItem()
             {

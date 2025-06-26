@@ -60,7 +60,7 @@ public abstract class BaseOrchestratorJob
     {
         logger.LogTrace("Getting server information from Aruba");
         
-        var servers = arubaClient.GetClusterServers();
+        var servers = arubaClient.GetClusterServers().GetAwaiter().GetResult();
         var storePath = certificateStore.StorePath;
 
         logger.LogDebug($"Number of servers found in Aruba: {servers.Count}");

@@ -6,10 +6,10 @@ namespace ArubaClearPassOrchestrator.Clients.Interfaces;
 
 public interface IArubaClient
 {
-    public ICollection<ClusterServerItem> GetClusterServers();
-    public GetServerCertificateResponse GetServerCertificate(string serverUuid, string serviceName);
-    public CreateCertificateSignRequestResponse CreateCertificateSignRequest(string servername, string privateKeyType, string digestAlgorithm);
-    public void UpdateServerCertificate(string serverUuid, string serviceName, string certificateUrl);
-    public void EnableServerCertificate(string serverUuid, string serviceName);
-    public void DisableServerCertificate(string serverUuid, string serviceName);
+    public Task<ICollection<ClusterServerItem>> GetClusterServers();
+    public Task<GetServerCertificateResponse> GetServerCertificate(string serverUuid, string serviceName);
+    public Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(string servername, string privateKeyType, string digestAlgorithm);
+    public Task UpdateServerCertificate(string serverUuid, string serviceName, string certificateUrl);
+    public Task EnableServerCertificate(string serverUuid, string serviceName);
+    public Task DisableServerCertificate(string serverUuid, string serviceName);
 }

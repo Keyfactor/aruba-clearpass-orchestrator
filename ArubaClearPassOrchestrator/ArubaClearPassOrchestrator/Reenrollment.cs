@@ -165,7 +165,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         try
         {
             _logger.LogDebug($"Creating CSR request in Aruba for server {servername} with encryption algorithm {encryptionAlgorithm} and {digestAlgorithm}");
-            var response = _arubaClient.CreateCertificateSignRequest(servername, encryptionAlgorithm, digestAlgorithm);
+            var response = _arubaClient.CreateCertificateSignRequest(servername, encryptionAlgorithm, digestAlgorithm).GetAwaiter().GetResult();
             certificateSignRequest = response.CertificateSignRequest;
             _logger.LogDebug($"CSR request completed successfully.");
         }

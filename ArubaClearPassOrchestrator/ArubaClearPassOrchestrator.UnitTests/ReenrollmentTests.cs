@@ -58,7 +58,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -96,7 +96,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -137,7 +137,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -146,7 +146,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
                 }
             });
         ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
-            .Returns(new CreateCertificateSignRequestResponse()
+            .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
             });
@@ -180,7 +180,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -189,7 +189,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
                 }
             });
         ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
-            .Returns(new CreateCertificateSignRequestResponse()
+            .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
             });
@@ -226,7 +226,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -235,7 +235,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
                 }
             });
         ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
-            .Returns(new CreateCertificateSignRequestResponse()
+            .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
             });
@@ -270,7 +270,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -312,7 +312,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -321,7 +321,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
                 }
             });
         ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
-            .Returns(new CreateCertificateSignRequestResponse()
+            .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
             });
@@ -358,7 +358,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -367,7 +367,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
                 }
             });
         ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
-            .Returns(new CreateCertificateSignRequestResponse()
+            .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
             });
@@ -403,7 +403,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -412,7 +412,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
                 }
             });
         ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
-            .Returns(new CreateCertificateSignRequestResponse()
+            .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
             });
@@ -452,7 +452,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
             ServerUsername = "ServerUsername",
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
-            .Returns(new List<ClusterServerItem>()
+            .ReturnsAsync(new List<ClusterServerItem>()
             {
                 new()
                 {
@@ -461,7 +461,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
                 }
             });
         ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
-            .Returns(new CreateCertificateSignRequestResponse()
+            .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
             });

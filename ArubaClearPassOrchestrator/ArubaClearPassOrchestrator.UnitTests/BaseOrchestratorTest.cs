@@ -1,5 +1,5 @@
 using ArubaClearPassOrchestrator.Clients.Interfaces;
-using ArubaClearPassOrchestrator.UnitTests.TestUtilities;
+using ArubaClearPassOrchestrator.Tests.Common.TestUtilities;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Moq;

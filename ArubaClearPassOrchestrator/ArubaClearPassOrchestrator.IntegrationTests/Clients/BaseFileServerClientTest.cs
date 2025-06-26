@@ -1,14 +1,14 @@
 using ArubaClearPassOrchestrator.Clients;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
 using ArubaClearPassOrchestrator.Tests.Common.Exceptions;
-using ArubaClearPassOrchestrator.UnitTests.TestUtilities;
+using ArubaClearPassOrchestrator.Tests.Common.TestUtilities;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
 namespace ArubaClearPassOrchestrator.IntegrationTests.Clients;
 
 [Trait("Category", "Integration")]
-public abstract class BaseFileServerClientTest<T> where T : IFileServerClient
+public abstract class BaseFileServerClientTest<T> : BaseIntegrationTest where T : IFileServerClient
 {
     protected readonly T Client;
     protected readonly ILogger Logger;
@@ -39,12 +39,5 @@ public abstract class BaseFileServerClientTest<T> where T : IFileServerClient
         Client = (T)client;
     }
 
-    protected void SkipTestUnlessEnvEnabled(string envName)
-    {
-        var enabled = Environment.GetEnvironmentVariable(envName);
-        if (enabled != "1")
-        {
-            throw new SkipTestException($"Env variable {envName} != '1'. Value: '{enabled}'");
-        }
-    }
+    
 }
