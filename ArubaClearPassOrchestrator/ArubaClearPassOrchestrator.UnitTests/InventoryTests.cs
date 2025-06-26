@@ -1,4 +1,5 @@
 using ArubaClearPassOrchestrator.Models.Aruba.ClusterServer;
+using ArubaClearPassOrchestrator.Models.Aruba.ServerCert;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
 using Moq;
@@ -26,7 +27,18 @@ public class InventoryTests : BaseOrchestratorTest
     [Fact]
     public void ProcessJob_WhenServerDoesNotExist_ReturnsJobFailureStatus()
     {
-        ArubaClientMock.Setup(p => p.GetClusterServers(It.IsAny<string>()))
+        var config = new InventoryJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = "{}",
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+        };
+        ArubaClientMock.Setup(p => p.GetClusterServers())
             .Returns(new List<ClusterServerItem>()
             {
                 new()
@@ -35,46 +47,73 @@ public class InventoryTests : BaseOrchestratorTest
                     ServerUuid = "abc123"
                 }
             });
-        var response = _sut.ProcessJob(new InventoryJobConfiguration(), _submitInventoryUpdateMock.Object);
+        var response = _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
 
         Assert.Equal(OrchestratorJobStatusJobResult.Failure, response.Result);
-        Assert.Equal("Fizz buzz", response.FailureMessage);
+        Assert.Equal("Unable to find store 'clearpass.localhost' in Aruba system", response.FailureMessage);
     }
 
     [Fact]
     public void ProcessJob_WhenCertificateRetrievalFails_ReturnsJobFailureStatus()
     {
-        ArubaClientMock.Setup(p => p.GetClusterServers(It.IsAny<string>()))
+        var config = new InventoryJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = "{}",
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+        };
+        ArubaClientMock.Setup(p => p.GetClusterServers())
             .Returns(new List<ClusterServerItem>()
             {
                 new()
                 {
-                    Name = "MyServerName",
+                    Name = "clearpass.localhost",
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.GetServerCertificate("MyServerName", "HTTPS(RSA)"))
+        ArubaClientMock.Setup(p => p.GetServerCertificate(It.IsAny<string>(), It.IsAny<string>()))
             .Throws(new HttpRequestException("That didn't work!"));
-        var response = _sut.ProcessJob(new InventoryJobConfiguration(), _submitInventoryUpdateMock.Object);
+        var response = _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
 
         Assert.Equal(OrchestratorJobStatusJobResult.Failure, response.Result);
-        Assert.Equal("Fizz buzz", response.FailureMessage);
+        Assert.Equal("An unexpected error occurred in inventory job: That didn't work!", response.FailureMessage);
     }
 
     [Fact]
     public void ProcessJob_WhenSuccessful_SubmitsCertificateToInventory()
     {
-        ArubaClientMock.Setup(p => p.GetClusterServers(It.IsAny<string>()))
+        var config = new InventoryJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = "{}",
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+        };
+        ArubaClientMock.Setup(p => p.GetClusterServers())
             .Returns(new List<ClusterServerItem>()
             {
                 new()
                 {
-                    Name = "MyServerName",
+                    Name = "clearpass.localhost",
                     ServerUuid = "fizzbuzz"
                 }
             });
+        ArubaClientMock.Setup(p => p.GetServerCertificate(It.IsAny<string>(), It.IsAny<string>())).Returns(
+            new GetServerCertificateResponse()
+            {
+                CertFile = "-----BEGIN CERTIFICATE-----\\nMIIGnjCCBIagAwIBAgIUWVsbKtLOVZcDGrUO29kcrK02p2wwDQ\\n-----END CERTIFICATE-----"
+            });
         
-        _sut.ProcessJob(new InventoryJobConfiguration(), _submitInventoryUpdateMock.Object);
+        _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
 
         _submitInventoryUpdateMock.Verify(p => p.Invoke(It.IsAny<IEnumerable<CurrentInventoryItem>>()), Times.Once);
     }
@@ -82,18 +121,34 @@ public class InventoryTests : BaseOrchestratorTest
     [Fact]
     public void ProcessJob_WhenSuccessful_ReturnsSuccessfulJob()
     {
-        ArubaClientMock.Setup(p => p.GetClusterServers(It.IsAny<string>()))
+        var config = new InventoryJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = "{}",
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+        };
+        ArubaClientMock.Setup(p => p.GetClusterServers())
             .Returns(new List<ClusterServerItem>()
             {
                 new()
                 {
-                    Name = "MyServerName",
+                    Name = "clearpass.localhost",
                     ServerUuid = "fizzbuzz"
                 }
             });
-        var result = _sut.ProcessJob(new InventoryJobConfiguration(), _submitInventoryUpdateMock.Object);
+        ArubaClientMock.Setup(p => p.GetServerCertificate(It.IsAny<string>(), It.IsAny<string>())).Returns(
+            new GetServerCertificateResponse()
+            {
+                CertFile = "-----BEGIN CERTIFICATE-----\\nMIIGnjCCBIagAwIBAgIUWVsbKtLOVZcDGrUO29kcrK02p2wwDQ\\n-----END CERTIFICATE-----"
+            });
+        var result = _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
 
         Assert.Equal(OrchestratorJobStatusJobResult.Success, result.Result);
-        Assert.Equal("", result.FailureMessage);
+        Assert.Null(result.FailureMessage);
     }
 }

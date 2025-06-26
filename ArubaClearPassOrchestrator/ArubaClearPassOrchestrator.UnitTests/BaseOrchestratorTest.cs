@@ -15,9 +15,11 @@ public abstract class BaseOrchestratorTest
 
     protected BaseOrchestratorTest(ITestOutputHelper output)
     {
-        var loggerFactory = LoggerFactory.Create(build =>
+        var loggerFactory = LoggerFactory.Create(builder =>
         {
-            build.AddProvider(new XunitLoggerProvider(output));
+            builder
+                .SetMinimumLevel(LogLevel.Trace)
+                .AddProvider(new XunitLoggerProvider(output));
         });
         
         Logger = loggerFactory.CreateLogger<BaseOrchestratorTest>();

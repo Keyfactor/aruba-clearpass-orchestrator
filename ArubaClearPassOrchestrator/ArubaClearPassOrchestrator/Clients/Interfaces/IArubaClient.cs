@@ -6,7 +6,7 @@ namespace ArubaClearPassOrchestrator.Clients.Interfaces;
 
 public interface IArubaClient
 {
-    public ICollection<ClusterServerItem> GetClusterServers(string servername);
+    public ICollection<ClusterServerItem> GetClusterServers();
     public GetServerCertificateResponse GetServerCertificate(string serverUuid, string serviceName);
     public CreateCertificateSignRequestResponse CreateCertificateSignRequest(string servername, string privateKeyType, string digestAlgorithm);
     public void UpdateServerCertificate(string serverUuid, string serviceName, string certificateUrl);
