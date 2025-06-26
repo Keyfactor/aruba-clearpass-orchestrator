@@ -41,23 +41,32 @@ public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
             var properties =
                 JsonConvert.DeserializeObject<ArubaCertificateStoreProperties>(jobConfiguration.CertificateStoreDetails
                     .Properties);
-            var storePath = jobConfiguration.CertificateStoreDetails.StorePath;
+            var host = jobConfiguration.CertificateStoreDetails.ClientMachine;
+            var servername = jobConfiguration.CertificateStoreDetails.StorePath;
+            var serviceName = properties.ServiceName;
+            
+            _logger.LogInformation($"Inventory job target: Host: {host}, Server Name: {servername}, Service Name: {serviceName}");
 
-            _arubaClient = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
+            var (client, clientError) = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
                 jobConfiguration.CertificateStoreDetails, properties);
-
-            var (serverInfo, jobResult) = GetArubaServerInfo(_logger, _arubaClient, jobConfiguration,
-                jobConfiguration.CertificateStoreDetails);
-            if (serverInfo == null)
+            if (clientError != null)
             {
-                return jobResult;
+                return clientError;
+            }
+            _arubaClient = client!;
+
+            var (serverInfo, serverInfoError) = GetArubaServerInfo(_logger, _arubaClient, jobConfiguration,
+                jobConfiguration.CertificateStoreDetails);
+            if (serverInfoError != null)
+            {
+                return serverInfoError;
             }
 
-            var certificate = _arubaClient.GetServerCertificate(serverInfo.ServerUuid, properties.ServiceName).GetAwaiter().GetResult();
+            var certificate = _arubaClient.GetServerCertificate(serverInfo.ServerUuid, serviceName).GetAwaiter().GetResult();
 
             var certificateEntry = new CurrentInventoryItem()
             {
-                Alias = $"{storePath} {properties.ServiceName}",
+                Alias = $"{servername} {properties.ServiceName}",
                 ItemStatus = OrchestratorInventoryItemStatus.Unknown,
                 PrivateKeyEntry = false,
                 Certificates = new[]

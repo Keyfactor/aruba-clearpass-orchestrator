@@ -45,13 +45,22 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 JsonConvert.DeserializeObject<ArubaCertificateStoreProperties>(jobConfiguration.CertificateStoreDetails
                     .Properties);
             
+            var host = jobConfiguration.CertificateStoreDetails.ClientMachine;
             var servername = jobConfiguration.CertificateStoreDetails.StorePath;
-            var service = properties.ServiceName;
+            var serviceName = properties.ServiceName;
             var encryptionAlgorithm = "2048-bit rsa"; // TODO: Resolve this from certificate template?
             var digestAlgorithm = properties.DigestAlgorithm;
+            
+            _logger.LogInformation($"Re-Enrollment job target: Host: {host}, Server Name: {servername}, Service Name: {serviceName}");
+            _logger.LogInformation($"Encryption alogrithm: {encryptionAlgorithm}, Digest Algorithm {digestAlgorithm}");
 
-            _arubaClient = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
+            var (client, clientError) = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
                 jobConfiguration.CertificateStoreDetails, properties);
+            if (clientError != null)
+            {
+                return clientError;
+            }
+            _arubaClient = client!;
 
             var (serverInfo, serverInfoFailure) = GetArubaServerInfo(_logger, _arubaClient, jobConfiguration,
                 jobConfiguration.CertificateStoreDetails);
@@ -77,13 +86,13 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             _logger.LogDebug($"CSR Enrollment completed successfully");
 
             var (certificateUrl, certificateUploadFailure) =
-                UploadCertificateAndGetUrl(servername, service, fileServerClient, certificate);
+                UploadCertificateAndGetUrl(servername, serviceName, fileServerClient, certificate);
             if (certificateUploadFailure != null)
             {
                 return certificateUploadFailure;
             }
 
-            var uploadFailure = UpdateServerCertificate(servername, serverInfo!.ServerUuid, service, certificateUrl!);
+            var uploadFailure = UpdateServerCertificate(servername, serverInfo!.ServerUuid, serviceName, certificateUrl!);
             if (uploadFailure != null)
             {
                 return uploadFailure;
@@ -117,9 +126,10 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     private (IFileServerClient?, JobResult?) GetFileServerClient(ArubaCertificateStoreProperties properties)
     {
         var fileServerType = properties.FileServerType;
-        var host = properties.FileServerHost;
-        var username = properties.FileServerUsername;
-        var password = properties.FileServerPassword;
+        var host = _resolver.Resolve(properties.FileServerHost);
+        var username = _resolver.Resolve(properties.FileServerUsername);
+        var password = _resolver.Resolve(properties.FileServerPassword);
+        
         IFileServerClient? client;
         switch (fileServerType)
         {

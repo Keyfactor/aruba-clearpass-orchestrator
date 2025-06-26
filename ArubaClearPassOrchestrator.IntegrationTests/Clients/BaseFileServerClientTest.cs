@@ -11,20 +11,10 @@ namespace ArubaClearPassOrchestrator.IntegrationTests.Clients;
 public abstract class BaseFileServerClientTest<T> : BaseIntegrationTest where T : IFileServerClient
 {
     protected readonly T Client;
-    protected readonly ILogger Logger;
 
     public BaseFileServerClientTest(ITestOutputHelper output, string type, string hostname, string username,
-        string password)
+        string password) : base(output)
     {
-        var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            builder
-                .SetMinimumLevel(LogLevel.Trace)
-                .AddProvider(new XunitLoggerProvider(output));
-        });
-
-        Logger = loggerFactory.CreateLogger<BaseFileServerClientTest<T>>();
-
         var fileServerClientFactory = new FileServerClientFactory();
         var client = fileServerClientFactory.CreateFileServerClient(Logger, type, hostname, username, password);
 

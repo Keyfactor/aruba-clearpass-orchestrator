@@ -17,6 +17,7 @@ public class S3FileServerClientTests : BaseFileServerClientTest<S3FileServerClie
         SkipTestUnlessEnvEnabled("S3_RUN_TESTS");
     }
     
+    [Fact]
     public async Task UploadCertificate_WhenACertificateIsUploaded_ReturnsAPreSignedUrl()
     {
         var certificate = CertificateGenerator.GenerateCertificate("com.example", "foobarbaz", true);

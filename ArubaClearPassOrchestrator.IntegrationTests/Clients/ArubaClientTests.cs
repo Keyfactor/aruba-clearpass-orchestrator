@@ -15,16 +15,9 @@ public class ArubaClientTests : BaseIntegrationTest
     private readonly string _serverUuid;
     private readonly string _serviceName;
     
-    public ArubaClientTests(ITestOutputHelper output)
+    public ArubaClientTests(ITestOutputHelper output) : base(output)
     {
         SkipTestUnlessEnvEnabled("ARUBA_RUN_TESTS");
-        
-        var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            builder
-                .SetMinimumLevel(LogLevel.Trace)
-                .AddProvider(new XunitLoggerProvider(output));
-        });
         
         var arubaHost = Environment.GetEnvironmentVariable("ARUBA_HOST");
         var arubaClientId = Environment.GetEnvironmentVariable("ARUBA_CLIENT_ID");
@@ -34,8 +27,8 @@ public class ArubaClientTests : BaseIntegrationTest
         _serverUuid = Environment.GetEnvironmentVariable("ARUBA_SERVER_UUID");
         _serviceName = Environment.GetEnvironmentVariable("ARUBA_SERVICE_NAME");
 
-        var logger = loggerFactory.CreateLogger<ArubaClientTests>();
-        _sut = new ArubaClient(logger, false, arubaHost, arubaClientId, arubaClientSecret);
+        
+        _sut = new ArubaClient(Logger, false, arubaHost, arubaClientId, arubaClientSecret);
     }
 
     [Fact]

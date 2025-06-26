@@ -2,6 +2,15 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArubaClearPassOrchestrator", "ArubaClearPassOrchestrator\ArubaClearPassOrchestrator.csproj", "{7E2A7111-F622-45CC-AEF4-225DC1C07CF5}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1A6C93E7-24FD-47FD-883D-EDABF5CEE4C6}"
+	ProjectSection(SolutionItems) = preProject
+		CHANGELOG.md = CHANGELOG.md
+		integration-manifest.json = integration-manifest.json
+		.github\workflows\keyfactor-extension-release.yml = .github\workflows\keyfactor-extension-release.yml
+		README.md = README.md
+		README.md.tpl = README.md.tpl
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E41F06F2-269D-42C3-A0A0-0AB4075DB1AC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArubaClearPassOrchestrator.UnitTests", "ArubaClearPassOrchestrator.UnitTests\ArubaClearPassOrchestrator.UnitTests.csproj", "{ECABE0D6-B497-46A0-BE32-70204DEE9B33}"

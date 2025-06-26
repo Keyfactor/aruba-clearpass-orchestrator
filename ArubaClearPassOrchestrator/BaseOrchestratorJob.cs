@@ -1,5 +1,6 @@
 using ArubaClearPassOrchestrator.Clients;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
+using ArubaClearPassOrchestrator.Exceptions;
 using ArubaClearPassOrchestrator.Models.Aruba.ClusterServer;
 using ArubaClearPassOrchestrator.Models.Keyfactor;
 using Keyfactor.Logging;
@@ -23,28 +24,51 @@ public abstract class BaseOrchestratorJob
     /// <param name="certificateStore"></param>
     /// <param name="properties"></param>
     /// <returns>The existing IArubaClient if not null, a new IArubaClient if null</returns>
-    protected IArubaClient GetArubaClient(ILogger logger, IPAMSecretResolver resolver, IArubaClient? arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore, ArubaCertificateStoreProperties properties)
+    protected (IArubaClient?, JobResult?) GetArubaClient(ILogger logger, IPAMSecretResolver resolver, IArubaClient? arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore, ArubaCertificateStoreProperties properties)
     {
-        var serverUsername = ResolvePAMField(logger, resolver, jobConfiguration.ServerUsername, "Server Username");
-        var serverPassword = ResolvePAMField(logger, resolver, jobConfiguration.ServerPassword, "Server Password");
-        var hostname = certificateStore.ClientMachine;
-        var useSsl = properties.ServerUseSslEnabled;
-
-        IArubaClient result;
-        
-        if (arubaClient == null)
+        try
         {
-            logger.LogTrace("Instantiating the Aruba Client");
-            result = new ArubaClient(logger, useSsl, hostname, serverUsername, serverPassword);
-            logger.LogTrace("Aruba Client instantiated successfully");
-        }
-        else
-        {
-            logger.LogTrace("Using the constructor-provided Aruba Client");
-            result = arubaClient;
-        }
+            var serverUsername = ResolvePAMField(logger, resolver, jobConfiguration.ServerUsername, "Server Username");
+            var serverPassword = ResolvePAMField(logger, resolver, jobConfiguration.ServerPassword, "Server Password");
+            var hostname = certificateStore.ClientMachine;
+            var useSsl = properties.ServerUseSslEnabled;
 
-        return result;
+            IArubaClient result;
+
+            if (arubaClient == null)
+            {
+                logger.LogTrace("Instantiating the Aruba Client");
+                result = new ArubaClient(logger, useSsl, hostname, serverUsername, serverPassword);
+                logger.LogTrace("Aruba Client instantiated successfully");
+            }
+            else
+            {
+                logger.LogTrace("Using the constructor-provided Aruba Client");
+                result = arubaClient;
+            }
+
+            return (result, null);
+        }
+        catch (ArubaAuthenticationException ex)
+        {
+            logger.LogError(ex, "Aruba authentication failed");
+
+            return (null, new JobResult()
+            {
+                Result = OrchestratorJobStatusJobResult.Failure,
+                FailureMessage = $"Unable to authenticate to Aruba instance. Message: {ex.Message}"
+            });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An unexpected error occurred while getting Aruba client");
+            
+            return (null, new JobResult()
+            {
+                Result = OrchestratorJobStatusJobResult.Failure,
+                FailureMessage = $"An unexpected error occurred while getting Aruba client. Message: {ex.Message}"
+            });
+        }
     }
 
     /// <summary>
