@@ -16,7 +16,7 @@ using System.Runtime.CompilerServices;
 
 namespace ArubaClearPassOrchestrator.IntegrationTests;
 
-public static class TestEnvironmentSetup
+public static class IntegrationTestEnvironmentSetup
 {
     [ModuleInitializer]
     public static void Initialize()

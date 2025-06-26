@@ -1,4 +1,3 @@
-using System.Security.Cryptography.X509Certificates;
 using ArubaClearPassOrchestrator.Clients;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
@@ -15,10 +14,10 @@ public class S3FileServerClientTests : BaseFileServerClientTest<S3FileServerClie
         password: Environment.GetEnvironmentVariable("S3_SECRET_ACCESS_KEY"))
     {
     }
-
-    [Fact]
+    
     public async Task UploadCertificate_WhenACertificateIsUploaded_ReturnsAPreSignedUrl()
     {
+        SkipTestUnlessEnvEnabled("S3_RUN_TESTS");
         var certificate = CertificateGenerator.GenerateCertificate("com.example", "foobarbaz", true);
         var certificateUrl = await Client.UploadCertificate("test_example.pfx", certificate);
         Assert.NotNull(certificateUrl);
