@@ -183,6 +183,69 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         Assert.Equal("An error occurred while performing CSR Generation in Aruba. Error: oops!", response.FailureMessage);
     }
     
+    [Theory]
+    [InlineData("RSA", 2048, "2048-bit rsa")]
+    [InlineData("RSA", 3072, "3072-bit rsa")]
+    [InlineData("RSA", 4096, "4096-bit rsa")]
+    [InlineData("ECC", "P-256", "nist/secg curve over a 256 bit prime field")]
+    [InlineData("ECC", "prime256v1", "nist/secg curve over a 256 bit prime field")]
+    [InlineData("ECC", "secp256r1", "nist/secg curve over a 256 bit prime field")]
+    [InlineData("ECC", "P-256/prime256v1/secp256r1", "nist/secg curve over a 256 bit prime field")]
+    [InlineData("ECC", "P-384", "nist/secg curve over a 384 bit prime field")]
+    [InlineData("ECC", "secp384r1", "nist/secg curve over a 384 bit prime field")]
+    [InlineData("ECC", "P-384/secp384r1", "nist/secg curve over a 384 bit prime field")]
+    [InlineData("ECC", "P-521", "nist/secg curve over a 521 bit prime field")]
+    [InlineData("ECC", "secp521r1", "nist/secg curve over a 521 bit prime field")]
+    [InlineData("ECC", "P-521/secp521r1", "nist/secg curve over a 521 bit prime field")]
+    public void ProcessJob_WhenKeyTypeAndSizeAreProvided_CallsArubaApiWithMappedEncryptionAlgorithm(string keyType, object keySize, string expectedEncryptionAlgorithm)
+    {
+        _testJobProperties["keyType"] = keyType;
+        _testJobProperties["keySize"] = keySize;
+        
+        var config = new ReenrollmentJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(_testStoreProperties),
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+            JobProperties = _testJobProperties
+        };
+        MockClusterServerReturns("clearpass.localhost", "fizzbuzz");
+        
+        _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+
+        ArubaClientMock.Verify(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), expectedEncryptionAlgorithm, It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public void ProcessJob_WhenUnsupportedKeyTypeAndSizeAreProvided_ReturnsJobFailure()
+    {
+        _testJobProperties["keyType"] = "RSA";
+        _testJobProperties["keySize"] = 1024;
+        
+        var config = new ReenrollmentJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(_testStoreProperties),
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+            JobProperties = _testJobProperties
+        };
+        MockClusterServerReturns("clearpass.localhost", "fizzbuzz");
+        
+        var result = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+        Assert.Equal(OrchestratorJobStatusJobResult.Failure, result.Result);
+        Assert.Contains("Unable to map key type 'RSA' and key size '1024' to an accepted Aruba mapping", result.FailureMessage);
+    }
+    
     [Fact]
     public void ProcessJob_WhenCSRIsGenerated_CallsSubmitReenrollmentDelegate()
     {
