@@ -90,7 +90,7 @@ public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in inventory job");
+            _logger.LogError(ex, $"Error in inventory job. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
 
             return new JobResult()
             {

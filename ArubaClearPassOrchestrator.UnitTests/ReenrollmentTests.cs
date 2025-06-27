@@ -3,6 +3,7 @@ using ArubaClearPassOrchestrator.Clients.Interfaces;
 using ArubaClearPassOrchestrator.Models.Aruba.CertSignRequest;
 using ArubaClearPassOrchestrator.Models.Aruba.ClusterServer;
 using ArubaClearPassOrchestrator.Models.Keyfactor;
+using ArubaClearPassOrchestrator.Tests.Common.Generators;
 using Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
@@ -13,19 +14,24 @@ using Xunit.Abstractions;
 
 namespace ArubaClearPassOrchestrator.UnitTests;
 
-public class ReenrollmentTests : BaseOrchestratorTest
+public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestContext>
 {
     private readonly Reenrollment _sut;
     private readonly Mock<IFileServerClient> _fileServerClientMock = new();
     private readonly Mock<IFileServerClientFactory> _fileServerClientFactoryMock = new();
     private readonly Mock<SubmitReenrollmentCSR> _submitReenrollmentCSRMock = new();
 
-    public ReenrollmentTests(ITestOutputHelper output) : base(output)
+    private readonly string _mockCsr =
+        @"-----BEGIN CERTIFICATE REQUEST-----MIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALcysdLgGAMiT2DmCOXYwkcJDPRszJ2MKaFc4rioD37hURSSbaR4rmBEpYquA6sNAYqo0DTToVJH+47MSRoY9+masoGlHsQuyZSeVY3G86zjYPLjq93dLaag6KjAMeG/JODYWdYR522T7eR3HLVtezgygY19ngesxw9UZqs2tJNjlt85mVOUowXleuLCKMA6Ko3lufRETZQucwTj0pW/zRIQWXDu2k07f6O8f6v1Iza5EX47sj0Da+/2D6XirpsKyiDeJI7FGX4/9aNOLANNB7Rrh/zc0iBm3Q4d1zWanXFzqtvK+O783torxTgbsYze8jeDwOZMSo0wWdjuyMev06cCAwEAAaBZMFcGCSqGSIb3DQEJDjFKMEgwJwYDVR0lBCAwHgYIKwYBBQUHAwEGCCsGAQUFBwMDBggrBgEFBQcDDjAdBgNVHQ4EFgQUJsrxxWO7tMwM7eqTSD8M/16MMA4wDQYJKoZIhvcNAQENBQADggEBAHzwIw1MHxBgxloNOnIlmVtbEUBtEoC9lNe+N/8IBrFThVlgs7HqGK+UyaA788rWLa9RKA3AmXL8hTG17WyyqxkibSvmSxcZEbvSjEXXXwbzOzEHTL1R/p/r0mPY9JKsUOenxJ8U4FZ3a6DVFTzAlJa4c8j13noAhLgCkHb3zNQzOGb3zI7rAAbTJ+Q4nDNUZeOd5EufuIjSQvvk1Jb7Le6Bf0iwoNPzX/kuGWvLd1xKk/v/fwzqMOcCfu8nua5Y8bYRKdIRJpJFlWahLwJnlrl3TgyuwVdLtnW5m4VIOnagqEc8NTL/l6xMOxAv1N//3vrjJ0y8AbEjr5lyxF8O/Ko=-----END CERTIFICATE REQUEST-----";
+
+    public ReenrollmentTests(SharedTestContext context, ITestOutputHelper output) : base(output)
     {
         _fileServerClientFactoryMock
             .Setup(p => p.CreateFileServerClient(It.IsAny<ILogger>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string>()))
             .Returns(_fileServerClientMock.Object);
+        _submitReenrollmentCSRMock.Setup(p => p.Invoke(It.IsAny<string>()))
+            .Returns(context.TestCertificate);
         _sut = new Reenrollment(Logger, ArubaClientMock.Object, _fileServerClientFactoryMock.Object, PAMResolverMock.Object);
     }
 
@@ -33,6 +39,135 @@ public class ReenrollmentTests : BaseOrchestratorTest
     public void ExtensionName_MatchesExpectedValue()
     {
         Assert.Equal("Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Reenrollment", _sut.ExtensionName);
+    }
+    
+    [Fact]
+    public void ProcessJob_JobPropertiesDoesNotContainSubjectCN_ReturnsJobFailureStatus()
+    {
+        var properties = new ArubaCertificateStoreProperties()
+        {
+            ServiceName = "HTTPS(RSA)",
+            FileServerType = "S3",
+            FileServerHost = "bogus.com",
+            FileServerUsername = "hocus",
+            FileServerPassword = "pocus",
+            DigestAlgorithm = "SHA-256",
+        };
+        var config = new ReenrollmentJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(properties),
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
+        };
+        ArubaClientMock.Setup(p => p.GetClusterServers())
+            .ReturnsAsync(new List<ClusterServerItem>()
+            {
+                new()
+                {
+                    Name = "SomethingElse",
+                    ServerUuid = "abc123"
+                }
+            });
+        var response = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+    
+        Assert.Equal(OrchestratorJobStatusJobResult.Failure, response.Result);
+        Assert.Contains("SubjectText was not found in job properties", response.FailureMessage);
+    }
+    
+    [Fact]
+    public void ProcessJob_JobPropertiesDoesNotContainKeyType_ReturnsJobFailureStatus()
+    {
+        var properties = new ArubaCertificateStoreProperties()
+        {
+            ServiceName = "HTTPS(RSA)",
+            FileServerType = "S3",
+            FileServerHost = "bogus.com",
+            FileServerUsername = "hocus",
+            FileServerPassword = "pocus",
+            DigestAlgorithm = "SHA-256",
+        };
+        var config = new ReenrollmentJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(properties),
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keySize", (Int64)2048},
+            }
+        };
+        ArubaClientMock.Setup(p => p.GetClusterServers())
+            .ReturnsAsync(new List<ClusterServerItem>()
+            {
+                new()
+                {
+                    Name = "SomethingElse",
+                    ServerUuid = "abc123"
+                }
+            });
+        var response = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+    
+        Assert.Equal(OrchestratorJobStatusJobResult.Failure, response.Result);
+        Assert.Contains("KeyType was not found in job properties", response.FailureMessage);
+    }
+    
+    [Fact]
+    public void ProcessJob_JobPropertiesDoesNotContainKeySize_ReturnsJobFailureStatus()
+    {
+        var properties = new ArubaCertificateStoreProperties()
+        {
+            ServiceName = "HTTPS(RSA)",
+            FileServerType = "S3",
+            FileServerHost = "bogus.com",
+            FileServerUsername = "hocus",
+            FileServerPassword = "pocus",
+            DigestAlgorithm = "SHA-256",
+        };
+        var config = new ReenrollmentJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(properties),
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+            }
+        };
+        ArubaClientMock.Setup(p => p.GetClusterServers())
+            .ReturnsAsync(new List<ClusterServerItem>()
+            {
+                new()
+                {
+                    Name = "SomethingElse",
+                    ServerUuid = "abc123"
+                }
+            });
+        var response = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+    
+        Assert.Equal(OrchestratorJobStatusJobResult.Failure, response.Result);
+        Assert.Contains("KeySize was not found in job properties", response.FailureMessage);
     }
     
     [Fact]
@@ -57,6 +192,12 @@ public class ReenrollmentTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
             .ReturnsAsync(new List<ClusterServerItem>()
@@ -95,6 +236,12 @@ public class ReenrollmentTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
             .ReturnsAsync(new List<ClusterServerItem>()
@@ -105,7 +252,7 @@ public class ReenrollmentTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
             .Throws(new HttpRequestException("oops!"));
         
         var response = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
@@ -136,6 +283,12 @@ public class ReenrollmentTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
             .ReturnsAsync(new List<ClusterServerItem>()
@@ -146,15 +299,117 @@ public class ReenrollmentTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
-                CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
+                CertificateSignRequest = _mockCsr
             });
         
         _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
 
-        _submitReenrollmentCSRMock.Verify(p => p.Invoke("-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"), Times.Once);
+        _submitReenrollmentCSRMock.Verify(p => p.Invoke(_mockCsr), Times.Once);
+    }
+    
+    [Fact]
+    public void ProcessJob_WhenSubmitReenrollmentReturnsNull_ReturnsJobFailure()
+    {
+        var properties = new ArubaCertificateStoreProperties()
+        {
+            ServiceName = "HTTPS(RSA)",
+            FileServerType = "S3",
+            FileServerHost = "bogus.com",
+            FileServerUsername = "hocus",
+            FileServerPassword = "pocus",
+            DigestAlgorithm = "SHA-256",
+        };
+        var config = new ReenrollmentJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(properties),
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
+        };
+        ArubaClientMock.Setup(p => p.GetClusterServers())
+            .ReturnsAsync(new List<ClusterServerItem>()
+            {
+                new()
+                {
+                    Name = "clearpass.localhost",
+                    ServerUuid = "fizzbuzz"
+                }
+            });
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+            .ReturnsAsync(new CreateCertificateSignRequestResponse()
+            {
+                CertificateSignRequest = _mockCsr
+            });
+        _submitReenrollmentCSRMock.Setup(p => p.Invoke(It.IsAny<string>())).Returns((X509Certificate2) null);
+        
+        var result = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+        
+        Assert.Equal(OrchestratorJobStatusJobResult.Failure, result.Result);
+        Assert.Equal("Command returned a null certificate from the CSR.", result.FailureMessage);
+    }
+    
+    [Fact]
+    public void ProcessJob_WhenSubmitReenrollmentThrowsAnException_ReturnsJobFailure()
+    {
+        var properties = new ArubaCertificateStoreProperties()
+        {
+            ServiceName = "HTTPS(RSA)",
+            FileServerType = "S3",
+            FileServerHost = "bogus.com",
+            FileServerUsername = "hocus",
+            FileServerPassword = "pocus",
+            DigestAlgorithm = "SHA-256",
+        };
+        var config = new ReenrollmentJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(properties),
+                StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
+        };
+        ArubaClientMock.Setup(p => p.GetClusterServers())
+            .ReturnsAsync(new List<ClusterServerItem>()
+            {
+                new()
+                {
+                    Name = "clearpass.localhost",
+                    ServerUuid = "fizzbuzz"
+                }
+            });
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+            .ReturnsAsync(new CreateCertificateSignRequestResponse()
+            {
+                CertificateSignRequest = _mockCsr
+            });
+        _submitReenrollmentCSRMock.Setup(p => p.Invoke(It.IsAny<string>())).Throws(new Exception("failed!"));
+        
+        var result = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+        
+        Assert.Equal(OrchestratorJobStatusJobResult.Failure, result.Result);
+        Assert.Equal("An error occurred while submitting re-enrollment update: failed!", result.FailureMessage);
     }
     
     [Fact]
@@ -179,6 +434,12 @@ public class ReenrollmentTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
             .ReturnsAsync(new List<ClusterServerItem>()
@@ -189,10 +450,10 @@ public class ReenrollmentTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
-                CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
+                CertificateSignRequest = _mockCsr
             });
         
         var result = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
@@ -225,6 +486,12 @@ public class ReenrollmentTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
             .ReturnsAsync(new List<ClusterServerItem>()
@@ -235,10 +502,10 @@ public class ReenrollmentTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
-                CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
+                CertificateSignRequest = _mockCsr
             });
         
         _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
@@ -269,6 +536,12 @@ public class ReenrollmentTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
             .ReturnsAsync(new List<ClusterServerItem>()
@@ -311,6 +584,12 @@ public class ReenrollmentTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
             .ReturnsAsync(new List<ClusterServerItem>()
@@ -321,10 +600,10 @@ public class ReenrollmentTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
-                CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
+                CertificateSignRequest = _mockCsr
             });
         _fileServerClientMock.Setup(p => p.UploadCertificate(It.IsAny<string>(), It.IsAny<X509Certificate2>()))
             .Throws(new HttpRequestException("that shouldn't happen"));
@@ -357,6 +636,12 @@ public class ReenrollmentTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
             .ReturnsAsync(new List<ClusterServerItem>()
@@ -367,10 +652,10 @@ public class ReenrollmentTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
-                CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
+                CertificateSignRequest = _mockCsr
             });
         _fileServerClientMock.Setup(p => p.UploadCertificate(It.IsAny<string>(), It.IsAny<X509Certificate2>()))
             .ReturnsAsync("https://access-your-file-here/mycert.crt");
@@ -402,6 +687,12 @@ public class ReenrollmentTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
             .ReturnsAsync(new List<ClusterServerItem>()
@@ -412,10 +703,10 @@ public class ReenrollmentTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
-                CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
+                CertificateSignRequest = _mockCsr
             });
         _fileServerClientMock.Setup(p => p.UploadCertificate(It.IsAny<string>(), It.IsAny<X509Certificate2>()))
             .ReturnsAsync("https://access-your-file-here/mycert.crt");
@@ -451,6 +742,12 @@ public class ReenrollmentTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"subjectText", "CN=com.example"},
+                {"keyType", "RSA"},
+                {"keySize", (Int64)2048},
+            }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
             .ReturnsAsync(new List<ClusterServerItem>()
@@ -461,10 +758,10 @@ public class ReenrollmentTests : BaseOrchestratorTest
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("clearpass.localhost", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
-                CertificateSignRequest = "-----BEGIN CERTIFICATE REQUEST-----\\nMIICvDCCAaQCAQAwHjEcMBoGA1UEAwwTY2xlYXJwYXNzLmxvY2FsaG9zdDCCASIw\\n-----END CERTIFICATE REQUEST-----\\n"
+                CertificateSignRequest = _mockCsr
             });
         _fileServerClientMock.Setup(p => p.UploadCertificate(It.IsAny<string>(), It.IsAny<X509Certificate2>()))
             .ReturnsAsync("https://access-your-file-here/mycert.crt");

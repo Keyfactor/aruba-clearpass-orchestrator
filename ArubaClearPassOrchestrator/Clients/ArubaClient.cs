@@ -95,7 +95,7 @@ public class ArubaClient : IArubaClient
         return result;
     }
 
-    public async Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(string servername,
+    public async Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(string subjectCN,
         string privateKeyType,
         string digestAlgorithm)
     {
@@ -107,7 +107,7 @@ public class ArubaClient : IArubaClient
         var password = GenerateSecurePassword(16);
         var request = new CreateCertificateSignRequestRequest()
         {
-            SubjectCN = servername,
+            SubjectCN = subjectCN,
             PrivateKeyPassword = password,
             PrivateKeyType = privateKeyType,
             DigestAlgorithm = digestAlgorithm

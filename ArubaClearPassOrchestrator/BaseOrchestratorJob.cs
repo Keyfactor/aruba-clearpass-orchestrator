@@ -51,7 +51,7 @@ public abstract class BaseOrchestratorJob
         }
         catch (ArubaAuthenticationException ex)
         {
-            logger.LogError(ex, "Aruba authentication failed");
+            logger.LogError(ex, $"Aruba authentication failed. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
 
             return (null, new JobResult()
             {
@@ -61,7 +61,7 @@ public abstract class BaseOrchestratorJob
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An unexpected error occurred while getting Aruba client");
+            logger.LogError(ex, $"An unexpected error occurred while getting Aruba client. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
             
             return (null, new JobResult()
             {

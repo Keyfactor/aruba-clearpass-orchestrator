@@ -7,6 +7,7 @@ using Amazon.S3.Model;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace ArubaClearPassOrchestrator.Clients;
 
@@ -56,6 +57,8 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
             
             _logger.LogDebug("Converting certificate contents to string");
             
+            // _logger.LogDebug($"Certificate: {JsonConvert.SerializeObject(certificate)}");
+            // _logger.LogDebug($"Raw Data: {certificate.RawData}, GetRawCertData: {certificate.GetRawCertData()}, GetRawCertDataString: {certificate.GetRawCertDataString()}");
             string pem = ConvertToPem(certificate);
             byte[] data = Encoding.UTF8.GetBytes(pem);
             
@@ -89,7 +92,7 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred uploading certificate contents to S3");
+            _logger.LogError(ex, $"An error occurred uploading certificate contents to S3. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
             throw;
         }
         
