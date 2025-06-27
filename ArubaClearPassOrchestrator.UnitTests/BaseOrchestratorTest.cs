@@ -1,4 +1,5 @@
 using ArubaClearPassOrchestrator.Clients.Interfaces;
+using ArubaClearPassOrchestrator.Models.Aruba.ClusterServer;
 using ArubaClearPassOrchestrator.Tests.Common.TestUtilities;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -26,5 +27,18 @@ public abstract class BaseOrchestratorTest
         
         PAMResolverMock.Setup(p => p.Resolve("ServerUsername")).Returns("foo");
         PAMResolverMock.Setup(p => p.Resolve("ServerPassword")).Returns("bar");
+    }
+    
+    protected void MockClusterServerReturns(string serverName, string serverUuid)
+    {
+        ArubaClientMock.Setup(p => p.GetClusterServers())
+            .ReturnsAsync(new List<ClusterServerItem>()
+            {
+                new()
+                {
+                    Name = serverName,
+                    ServerUuid = serverUuid
+                }
+            });
     }
 }

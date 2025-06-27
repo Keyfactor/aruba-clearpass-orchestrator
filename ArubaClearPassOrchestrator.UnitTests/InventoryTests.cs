@@ -1,4 +1,3 @@
-using ArubaClearPassOrchestrator.Models.Aruba.ClusterServer;
 using ArubaClearPassOrchestrator.Models.Aruba.ServerCert;
 using ArubaClearPassOrchestrator.Models.Keyfactor;
 using Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
@@ -14,6 +13,9 @@ public class InventoryTests : BaseOrchestratorTest
 {
     private readonly Inventory _sut;
     private readonly Mock<SubmitInventoryUpdate> _submitInventoryUpdateMock = new();
+
+    private readonly string _mockCertificate =
+        "-----BEGIN CERTIFICATE-----\\nMIIGnjCCBIagAwIBAgIUWVsbKtLOVZcDGrUO29kcrK02p2wwDQ\\n-----END CERTIFICATE-----";
 
     public InventoryTests(ITestOutputHelper output) : base(output)
     {
@@ -44,15 +46,7 @@ public class InventoryTests : BaseOrchestratorTest
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
         };
-        ArubaClientMock.Setup(p => p.GetClusterServers())
-            .ReturnsAsync(new List<ClusterServerItem>()
-            {
-                new()
-                {
-                    Name = "SomethingElse",
-                    ServerUuid = "abc123"
-                }
-            });
+        MockClusterServerReturns("SomethingElse", "abc123");
         var response = _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
 
         Assert.Equal(OrchestratorJobStatusJobResult.Failure, response.Result);
@@ -77,15 +71,7 @@ public class InventoryTests : BaseOrchestratorTest
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
         };
-        ArubaClientMock.Setup(p => p.GetClusterServers())
-            .ReturnsAsync(new List<ClusterServerItem>()
-            {
-                new()
-                {
-                    Name = "clearpass.localhost",
-                    ServerUuid = "fizzbuzz"
-                }
-            });
+        MockClusterServerReturns("clearpass.localhost", "fizzbuzz");
         ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)"))
             .Throws(new HttpRequestException("That didn't work!"));
         var response = _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
@@ -112,20 +98,8 @@ public class InventoryTests : BaseOrchestratorTest
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
         };
-        ArubaClientMock.Setup(p => p.GetClusterServers())
-            .ReturnsAsync(new List<ClusterServerItem>()
-            {
-                new()
-                {
-                    Name = "clearpass.localhost",
-                    ServerUuid = "fizzbuzz"
-                }
-            });
-        ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)")).ReturnsAsync(
-            new GetServerCertificateResponse()
-            {
-                CertFile = "-----BEGIN CERTIFICATE-----\\nMIIGnjCCBIagAwIBAgIUWVsbKtLOVZcDGrUO29kcrK02p2wwDQ\\n-----END CERTIFICATE-----"
-            });
+        MockClusterServerReturns("clearpass.localhost", "fizzbuzz");
+        MockServerCertificateReturns(_mockCertificate);
         
         _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
 
@@ -150,23 +124,20 @@ public class InventoryTests : BaseOrchestratorTest
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
         };
-        ArubaClientMock.Setup(p => p.GetClusterServers())
-            .ReturnsAsync(new List<ClusterServerItem>()
-            {
-                new()
-                {
-                    Name = "clearpass.localhost",
-                    ServerUuid = "fizzbuzz"
-                }
-            });
-        ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)")).ReturnsAsync(
-            new GetServerCertificateResponse()
-            {
-                CertFile = "-----BEGIN CERTIFICATE-----\\nMIIGnjCCBIagAwIBAgIUWVsbKtLOVZcDGrUO29kcrK02p2wwDQ\\n-----END CERTIFICATE-----"
-            });
+        MockClusterServerReturns("clearpass.localhost", "fizzbuzz");
+        MockServerCertificateReturns(_mockCertificate);
         var result = _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
 
         Assert.Equal(OrchestratorJobStatusJobResult.Success, result.Result);
         Assert.Null(result.FailureMessage);
+    }
+
+    private void MockServerCertificateReturns(string certificate)
+    {
+        ArubaClientMock.Setup(p => p.GetServerCertificate("fizzbuzz", "HTTPS(RSA)")).ReturnsAsync(
+            new GetServerCertificateResponse()
+            {
+                CertFile = _mockCertificate
+            });
     }
 }

@@ -12,6 +12,15 @@ namespace ArubaClearPassOrchestrator.Tests.Common.Generators;
 
 public class CertificateGenerator
 {
+    /// <summary>
+    /// Generates a self-signed, cross-platform X509Certificate2 object to be used in unit / integration tests.
+    /// This eliminates the need to talk to a remote source (i.e. Keyfactor Command) to generate a compatible
+    /// certificate to use for testing.
+    /// </summary>
+    /// <param name="alias"></param>
+    /// <param name="password"></param>
+    /// <param name="includeChain"></param>
+    /// <returns></returns>
     public static X509Certificate2 GenerateCertificate(string alias, string password, bool includeChain)
     {
         var keyPair = GenerateKeyPair();
