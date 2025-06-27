@@ -1,17 +1,16 @@
 using ArubaClearPassOrchestrator.Clients;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
+using ArubaClearPassOrchestrator.Models.Keyfactor;
 using ArubaClearPassOrchestrator.Tests.Common.TestUtilities;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
 namespace ArubaClearPassOrchestrator.IntegrationTests.Clients;
 
-[Trait("Category", "Integration")]
 public class ArubaClientTests : BaseIntegrationTest
 {
     private readonly IArubaClient _sut;
-
-    private readonly string _serverName;
+    
     private readonly string _serverUuid;
     private readonly string _serviceName;
     
@@ -23,7 +22,6 @@ public class ArubaClientTests : BaseIntegrationTest
         var arubaClientId = Environment.GetEnvironmentVariable("ARUBA_CLIENT_ID");
         var arubaClientSecret = Environment.GetEnvironmentVariable("ARUBA_CLIENT_SECRET");
         
-        _serverName = Environment.GetEnvironmentVariable("ARUBA_SERVER_NAME");
         _serverUuid = Environment.GetEnvironmentVariable("ARUBA_SERVER_UUID");
         _serviceName = Environment.GetEnvironmentVariable("ARUBA_SERVICE_NAME");
 
@@ -49,7 +47,17 @@ public class ArubaClientTests : BaseIntegrationTest
     [Fact]
     public async Task CreateCertificateSignRequest_WhenCalled_ShouldReturnACertificateSigningRequest()
     {
-        var result = await _sut.CreateCertificateSignRequest(_serverName, "2048-bit rsa", "SHA-512");
+        var subjectInformation = new CertificateSubjectInformation()
+        {
+            CommonName = "com.example.com",
+            Organization = "org",
+            OrganizationalUnit = "orgunit",
+            CityLocality = "foo",
+            StateProvince = "WY",
+            CountryRegion = "US",
+            Email = "test@example.com"
+        };
+        var result = await _sut.CreateCertificateSignRequest(subjectInformation, "2048-bit rsa", "SHA-512");
         Assert.NotNull(result);
         Assert.NotEmpty(result.CertificateSignRequest);
     }

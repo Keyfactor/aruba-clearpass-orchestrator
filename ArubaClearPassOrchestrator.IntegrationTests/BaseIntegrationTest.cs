@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 
 namespace ArubaClearPassOrchestrator.IntegrationTests;
 
+[Trait("Category", "Integration")]
 public abstract class BaseIntegrationTest
 {
     protected ILogger Logger;

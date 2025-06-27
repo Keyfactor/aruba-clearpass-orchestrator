@@ -4,12 +4,9 @@ namespace ArubaClearPassOrchestrator.Models.Keyfactor;
 
 public class JobPropertyFields
 {
-    // [JsonProperty("subjectText")]
-    public string CommonName { get; set; }
+    public string SubjectText { get; set; }
     
-    // [JsonProperty("keyType")]
     public string KeyType { get; set; }
     
-    // [JsonProperty("keySize")]
-    public Int64 KeySize { get; set; }
+    public string KeySize { get; set; }
 }

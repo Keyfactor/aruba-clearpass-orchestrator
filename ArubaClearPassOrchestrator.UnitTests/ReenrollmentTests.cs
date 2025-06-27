@@ -3,7 +3,6 @@ using ArubaClearPassOrchestrator.Clients.Interfaces;
 using ArubaClearPassOrchestrator.Models.Aruba.CertSignRequest;
 using ArubaClearPassOrchestrator.Models.Aruba.ClusterServer;
 using ArubaClearPassOrchestrator.Models.Keyfactor;
-using ArubaClearPassOrchestrator.Tests.Common.Generators;
 using Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
@@ -66,7 +65,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             JobProperties = new Dictionary<string, object>()
             {
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -109,7 +108,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             JobProperties = new Dictionary<string, object>()
             {
                 {"subjectText", "CN=com.example"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -196,7 +195,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -240,7 +239,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -252,7 +251,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
             .Throws(new HttpRequestException("oops!"));
         
         var response = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
@@ -287,7 +286,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -299,7 +298,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = _mockCsr
@@ -336,7 +335,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -348,7 +347,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = _mockCsr
@@ -358,7 +357,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         var result = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
         
         Assert.Equal(OrchestratorJobStatusJobResult.Failure, result.Result);
-        Assert.Equal("Command returned a null certificate from the CSR.", result.FailureMessage);
+        Assert.Equal("Command returned a null certificate from the CSR. Did the subject information included in the CSR match the subject information on the ODKG request? Check the Keyfactor Command logs for error information.", result.FailureMessage);
     }
     
     [Fact]
@@ -387,7 +386,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -399,7 +398,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = _mockCsr
@@ -409,7 +408,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         var result = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
         
         Assert.Equal(OrchestratorJobStatusJobResult.Failure, result.Result);
-        Assert.Equal("An error occurred while submitting re-enrollment update: failed!", result.FailureMessage);
+        Assert.Equal("An error occurred while submitting re-enrollment update: failed!. Check the Keyfactor Command logs for more information.", result.FailureMessage);
     }
     
     [Fact]
@@ -438,7 +437,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -450,7 +449,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = _mockCsr
@@ -490,7 +489,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -502,7 +501,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = _mockCsr
@@ -540,7 +539,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -588,7 +587,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -600,7 +599,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = _mockCsr
@@ -640,7 +639,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -652,7 +651,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = _mockCsr
@@ -691,7 +690,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -703,7 +702,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = _mockCsr
@@ -746,7 +745,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 {"subjectText", "CN=com.example"},
                 {"keyType", "RSA"},
-                {"keySize", (Int64)2048},
+                {"keySize", 2048},
             }
         };
         ArubaClientMock.Setup(p => p.GetClusterServers())
@@ -758,7 +757,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                     ServerUuid = "fizzbuzz"
                 }
             });
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest("com.example", "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = _mockCsr

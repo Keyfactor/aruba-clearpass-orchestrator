@@ -5,6 +5,7 @@ using ArubaClearPassOrchestrator.Models.Aruba.CertSignRequest;
 using ArubaClearPassOrchestrator.Models.Aruba.ClusterServer;
 using ArubaClearPassOrchestrator.Models.Aruba.ServerCert;
 using ArubaClearPassOrchestrator.Models.Aruba.TokenEndpoint;
+using ArubaClearPassOrchestrator.Models.Keyfactor;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -95,7 +96,7 @@ public class ArubaClient : IArubaClient
         return result;
     }
 
-    public async Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(string subjectCN,
+    public async Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(CertificateSubjectInformation subjectInformation,
         string privateKeyType,
         string digestAlgorithm)
     {
@@ -107,7 +108,12 @@ public class ArubaClient : IArubaClient
         var password = GenerateSecurePassword(16);
         var request = new CreateCertificateSignRequestRequest()
         {
-            SubjectCN = subjectCN,
+            SubjectCN = subjectInformation.CommonName,
+            SubjectO = subjectInformation.Organization,
+            SubjectOU = subjectInformation.OrganizationalUnit,
+            SubjectC = subjectInformation.CountryRegion,
+            SubjectL = subjectInformation.CityLocality,
+            SubjectST = subjectInformation.StateProvince,
             PrivateKeyPassword = password,
             PrivateKeyType = privateKeyType,
             DigestAlgorithm = digestAlgorithm

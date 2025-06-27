@@ -3,7 +3,6 @@ using Xunit.Abstractions;
 
 namespace ArubaClearPassOrchestrator.IntegrationTests;
 
-[Trait("Category", "Integration")]
 public class InventoryTests : BaseIntegrationTest
 {
     private readonly Inventory _sut;

@@ -9,14 +9,10 @@ using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Asn1;
-using Org.BouncyCastle.Asn1.Pkcs;
-using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.X509;
-using Org.BouncyCastle.X509.Extension;
 using Exception = System.Exception;
 
 namespace Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
@@ -62,6 +58,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             
             _logger.LogInformation($"Re-Enrollment job target: Host: {host}, Server Name: {servername}, Service Name: {serviceName}");
             _logger.LogDebug($"Re-Enrollment job properties: {JsonConvert.SerializeObject(jobConfiguration.JobProperties)}");
+            _logger.LogDebug($"Job Config: {JsonConvert.SerializeObject(jobConfiguration)}");
             
             var (jobProperties, jobPropertiesFailure) = ParseJobPropertyFields(jobConfiguration.JobProperties);
             if (jobPropertiesFailure != null)
@@ -69,7 +66,16 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 return jobPropertiesFailure;
             }
             
-            _logger.LogDebug($"Parsed job properties: CN: {jobProperties.CommonName}, keyType: {jobProperties.KeyType}, keySize: {jobProperties.KeySize}");
+            _logger.LogDebug($"Parsed job properties: SubjectText: {jobProperties.SubjectText}, keyType: {jobProperties.KeyType}, keySize: {jobProperties.KeySize}");
+
+            var subjectInformation = CertificateSubjectInformation.ParseFromSubjectText(jobProperties.SubjectText);
+            
+            _logger.LogInformation($"Parsed subject information: {JsonConvert.SerializeObject(subjectInformation)}");
+
+            if (subjectInformation.Email != null)
+            {
+                _logger.LogWarning($"The certificate subject field Email (E) was found on the ODKG request. This may cause a failure as Aruba does not support the email field on the CSR request!");
+            }
             
             var encryptionAlgorithm = "2048-bit rsa"; // TODO: Resolve this from certificate template?
             var digestAlgorithm = properties.DigestAlgorithm;
@@ -97,7 +103,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 return fileServerFailure;
             }
 
-            var (csr, csrFailure) = GetCertificateSigningRequest(jobProperties.CommonName, encryptionAlgorithm, digestAlgorithm);
+            var (csr, csrFailure) = GetCertificateSigningRequest(subjectInformation, encryptionAlgorithm, digestAlgorithm);
             if (csrFailure != null)
             {
                 return csrFailure;
@@ -194,13 +200,13 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     /// </summary>
     /// <param name="properties"></param>
     /// <returns>Returns a CSR string if the request succeeds. Otherwise, it returns a null string with a failed JobResult.</returns>
-    private (string?, JobResult?) GetCertificateSigningRequest(string subjectCN, string encryptionAlgorithm, string digestAlgorithm)
+    private (string?, JobResult?) GetCertificateSigningRequest(CertificateSubjectInformation subjectInformation, string encryptionAlgorithm, string digestAlgorithm)
     {
         string? certificateSignRequest = null;
         try
         {
-            _logger.LogDebug($"Creating CSR request in Aruba for subject CN {subjectCN} with encryption algorithm {encryptionAlgorithm} and {digestAlgorithm}");
-            var response = _arubaClient.CreateCertificateSignRequest(subjectCN, encryptionAlgorithm, digestAlgorithm).GetAwaiter().GetResult();
+            _logger.LogDebug($"Creating CSR request in Aruba for subject CN {subjectInformation.CommonName} with encryption algorithm {encryptionAlgorithm} and {digestAlgorithm}");
+            var response = _arubaClient.CreateCertificateSignRequest(subjectInformation, encryptionAlgorithm, digestAlgorithm).GetAwaiter().GetResult();
             certificateSignRequest = response.CertificateSignRequest;
             
             ParseAndLogCsrMetadata(certificateSignRequest);
@@ -282,6 +288,13 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         return null;
     }
 
+    /// <summary>
+    /// Send the CSR request to Command synchronously. If successful, Command will return an X509Certificate2 object
+    /// If there is an issue with the update (i.e. CSR subject information does not match ODKG definition), report a job failure.
+    /// </summary>
+    /// <param name="submitReenrollmentUpdate"></param>
+    /// <param name="csr"></param>
+    /// <returns></returns>
     private (X509Certificate2?, JobResult?) SubmitReenrollmentUpdate(SubmitReenrollmentCSR submitReenrollmentUpdate, string csr)
     {
         try
@@ -297,7 +310,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 {
                     Result = OrchestratorJobStatusJobResult.Failure,
                     FailureMessage =
-                        $"Command returned a null certificate from the CSR."
+                        $"Command returned a null certificate from the CSR. Did the subject information included in the CSR match the subject information on the ODKG request? Check the Keyfactor Command logs for error information."
                 });
             }
             
@@ -311,7 +324,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             {
                 Result = OrchestratorJobStatusJobResult.Failure,
                 FailureMessage =
-                    $"An error occurred while submitting re-enrollment update: {ex.Message}"
+                    $"An error occurred while submitting re-enrollment update: {ex.Message}. Check the Keyfactor Command logs for more information."
             });
         }
         
@@ -357,6 +370,12 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         _logger.MethodExit();
     }
 
+    /// <summary>
+    /// Parses the job properties dictionary and converts into a model. If required fields are missing, will report a job failure
+    /// with list of missing properties.
+    /// </summary>
+    /// <param name="properties"></param>
+    /// <returns></returns>
     private (JobPropertyFields?, JobResult?) ParseJobPropertyFields(Dictionary<string, object> properties)
     {
         _logger.MethodEntry();
@@ -391,25 +410,11 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
         var result = new JobPropertyFields()
         {
-            CommonName = GetCommonNameField(subjectText.ToString()),
-            KeySize = (Int64)keySize,
-            KeyType = keyType.ToString(),
+            SubjectText = $"{subjectText}",
+            KeySize = $"{keySize}",
+            KeyType = $"{keyType}",
         };
         _logger.MethodExit();
         return (result, null);
-    }
-
-    private string GetCommonNameField(string subjectText)
-    {
-        _logger.MethodEntry();
-        var dn = new X500DistinguishedName(subjectText);
-        var cn = dn.Name
-            .Split(',')
-            .Select(kvp => kvp.Trim())
-            .FirstOrDefault(kvp => kvp.StartsWith("CN=", StringComparison.OrdinalIgnoreCase))
-            ?.Substring(3);
-        _logger.LogDebug($"Parsed common name from subject text: {cn}");
-        _logger.MethodExit();
-        return cn;
     }
 }
