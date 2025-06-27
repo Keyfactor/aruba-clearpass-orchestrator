@@ -1,3 +1,4 @@
+using Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 using Xunit.Abstractions;
 
 namespace ArubaClearPassOrchestrator.IntegrationTests;

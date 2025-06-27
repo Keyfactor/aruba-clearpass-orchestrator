@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Exception = System.Exception;
 
-namespace ArubaClearPassOrchestrator;
+namespace Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 
 public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 {

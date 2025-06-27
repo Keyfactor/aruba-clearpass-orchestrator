@@ -1,6 +1,7 @@
 using ArubaClearPassOrchestrator.Models.Aruba.ClusterServer;
 using ArubaClearPassOrchestrator.Models.Aruba.ServerCert;
 using ArubaClearPassOrchestrator.Models.Keyfactor;
+using Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
 using Moq;

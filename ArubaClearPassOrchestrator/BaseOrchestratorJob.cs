@@ -9,7 +9,7 @@ using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace ArubaClearPassOrchestrator;
+namespace Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 
 public abstract class BaseOrchestratorJob
 {

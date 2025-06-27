@@ -2,11 +2,11 @@
 	"extensions": {
 		"Keyfactor.Orchestrators.Extensions.IOrchestratorJobExtension": {
 			"CertStores.Aruba.Inventory": {
-				"assemblypath": "PaloAlto.dll",
+				"assemblypath": "ArubaClearPassOrchestrator.dll",
 				"TypeFullName": "Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Inventory"
 			},
 			"CertStores.Aruba.Reenrollment": {
-				"assemblypath": "PaloAlto.dll",
+				"assemblypath": "ArubaClearPassOrchestrator.dll",
 				"TypeFullName": "Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Reenrollment"
 			}
 		}

@@ -8,7 +8,7 @@ using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace ArubaClearPassOrchestrator;
+namespace Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 
 public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
 {

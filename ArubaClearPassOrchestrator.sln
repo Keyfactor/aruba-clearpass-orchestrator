@@ -6,9 +6,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		CHANGELOG.md = CHANGELOG.md
 		integration-manifest.json = integration-manifest.json
-		.github\workflows\keyfactor-extension-release.yml = .github\workflows\keyfactor-extension-release.yml
 		README.md = README.md
-		README.md.tpl = README.md.tpl
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E41F06F2-269D-42C3-A0A0-0AB4075DB1AC}"
