@@ -174,7 +174,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             JobProperties = _testJobProperties
         };
         MockClusterServerReturns("clearpass.localhost", "fizzbuzz");
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), "2048-bit rsa", "SHA-256"))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), It.IsAny<string>(), "2048-bit rsa", "SHA-256"))
             .Throws(new HttpRequestException("oops!"));
         
         var response = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
@@ -218,7 +218,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         
         _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
 
-        ArubaClientMock.Verify(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), expectedEncryptionAlgorithm, It.IsAny<string>()), Times.Once);
+        ArubaClientMock.Verify(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), It.IsAny<string>(), expectedEncryptionAlgorithm, It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
@@ -504,7 +504,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
 
     private void MockCertificateSignRequestReturns(string csr)
     {
-        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), It.IsAny<string>(), It.IsAny<string>()))
+        ArubaClientMock.Setup(p => p.CreateCertificateSignRequest(It.IsAny<CertificateSubjectInformation>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(new CreateCertificateSignRequestResponse()
             {
                 CertificateSignRequest = csr

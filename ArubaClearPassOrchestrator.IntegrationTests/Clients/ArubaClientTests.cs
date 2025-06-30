@@ -1,8 +1,6 @@
 using ArubaClearPassOrchestrator.Clients;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
 using ArubaClearPassOrchestrator.Models.Keyfactor;
-using ArubaClearPassOrchestrator.Tests.Common.TestUtilities;
-using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
 namespace ArubaClearPassOrchestrator.IntegrationTests.Clients;
@@ -57,23 +55,8 @@ public class ArubaClientTests : BaseIntegrationTest
             CountryRegion = "US",
             Email = "test@example.com"
         };
-        var result = await _sut.CreateCertificateSignRequest(subjectInformation, "2048-bit rsa", "SHA-512");
+        var result = await _sut.CreateCertificateSignRequest(subjectInformation, "F0oB4rB@z!", "2048-bit rsa", "SHA-512");
         Assert.NotNull(result);
         Assert.NotEmpty(result.CertificateSignRequest);
-    }
-
-    [Fact]
-    public async Task EnableServerCertificate_WhenCalled_ShouldNotThrowException()
-    {
-        await _sut.EnableServerCertificate(_serverUuid, _serviceName);
-    }
-    
-    [Fact]
-    public async Task DisableServerCertificate_WhenCalled_ShouldNotThrowException()
-    {
-        await _sut.DisableServerCertificate(_serverUuid, _serviceName);
-        
-        // Make sure we enable the server certificate after we're done
-        await _sut.EnableServerCertificate(_serverUuid, _serviceName);
     }
 }

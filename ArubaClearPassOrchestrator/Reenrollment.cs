@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 using Exception = System.Exception;
 
@@ -226,10 +227,11 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         string? certificateSignRequest = null;
         try
         {
+            var password = GenerateSecurePassword(16);
             _logger.LogDebug(
                 $"Creating CSR request in Aruba for subject CN {subjectInformation.CommonName} with encryption algorithm {encryptionAlgorithm} and {digestAlgorithm}");
             var response = _arubaClient
-                .CreateCertificateSignRequest(subjectInformation, encryptionAlgorithm, digestAlgorithm).GetAwaiter()
+                .CreateCertificateSignRequest(subjectInformation, password, encryptionAlgorithm, digestAlgorithm).GetAwaiter()
                 .GetResult();
             certificateSignRequest = response.CertificateSignRequest;
 
@@ -449,6 +451,13 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         return (result, null);
     }
 
+    /// <summary>
+    /// Maps the key type and key size from the JobProperties to an Aruba-accepted encryption algorithm.
+    /// Acceptable encryption algorithms can be found in the Aruba API documentation: https://developer.arubanetworks.com/cppm/reference/certsignrequestpost
+    /// </summary>
+    /// <param name="keyType"></param>
+    /// <param name="keySize"></param>
+    /// <returns></returns>
     private (string?, JobResult?) MapKeySizeAndTypeToArubaEncryptionAlgorithm(string keyType, string keySize)
     {
         var rsa2048 = "2048-bit rsa";
@@ -517,5 +526,28 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         }
 
         return (encryptionAlgorithm, null);
+    }
+    
+    /// <summary>
+    /// Generates a secure password of the specified length using a cryptographically secure random number generator.
+    /// </summary>
+    /// <param name="length">The length of the password to generate.</param>
+    /// <returns>A securely generated password of specified length.</returns>
+    private string GenerateSecurePassword(int length)
+    {
+        _logger.MethodEntry();
+        _logger.LogDebug($"Generating a secure password with {length} characters");
+        const string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_";
+        var random = new SecureRandom();
+        var password = new StringBuilder();
+
+        for (int i = 0; i < length; i++)
+        {
+            int index = random.Next(allowedChars.Length);
+            password.Append(allowedChars[index]);
+        }
+        
+        _logger.MethodExit();
+        return password.ToString();
     }
 }

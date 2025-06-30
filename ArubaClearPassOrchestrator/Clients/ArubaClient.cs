@@ -9,7 +9,6 @@ using ArubaClearPassOrchestrator.Models.Keyfactor;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Security;
 
 namespace ArubaClearPassOrchestrator.Clients;
 
@@ -60,11 +59,11 @@ public class ArubaClient : IArubaClient
         _logger.LogDebug(
             $"Cluster server request complete. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
 
-        response.EnsureSuccessStatusCode();
+        EnsureRequestSucceeded(response);
 
         _logger.LogDebug("Getting cluster servers request completed successfully.");
 
-        var responseJson = await response.Content.ReadAsStringAsync();
+        ReadHttpResponseContent(response, out var responseJson);
         var result = JsonConvert.DeserializeObject<GetClusterServerResponse>(responseJson);
         var items = result!.Embedded.Items;
 
@@ -85,11 +84,11 @@ public class ArubaClient : IArubaClient
         _logger.LogDebug(
             $"Server certificate request complete. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
 
-        response.EnsureSuccessStatusCode();
+        EnsureRequestSucceeded(response);
 
         _logger.LogDebug("Server certificate request completed successfully.");
 
-        var responseJson = await response.Content.ReadAsStringAsync();
+        ReadHttpResponseContent(response, out var responseJson);
         var result = JsonConvert.DeserializeObject<GetServerCertificateResponse>(responseJson);
 
         _logger.MethodExit();
@@ -97,6 +96,7 @@ public class ArubaClient : IArubaClient
     }
 
     public async Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(CertificateSubjectInformation subjectInformation,
+        string privateKeyPassword,
         string privateKeyType,
         string digestAlgorithm)
     {
@@ -104,8 +104,7 @@ public class ArubaClient : IArubaClient
 
         var url = $"/api/cert-sign-request";
         _logger.LogDebug($"Creating a certificate signing request to {_baseUrl}{url}");
-
-        var password = GenerateSecurePassword(16);
+        
         var request = new CreateCertificateSignRequestRequest()
         {
             SubjectCN = subjectInformation.CommonName,
@@ -114,7 +113,7 @@ public class ArubaClient : IArubaClient
             SubjectC = subjectInformation.CountryRegion,
             SubjectL = subjectInformation.CityLocality,
             SubjectST = subjectInformation.StateProvince,
-            PrivateKeyPassword = password,
+            PrivateKeyPassword = privateKeyPassword,
             PrivateKeyType = privateKeyType,
             DigestAlgorithm = digestAlgorithm
         };
@@ -124,11 +123,11 @@ public class ArubaClient : IArubaClient
         _logger.LogDebug(
             $"Certificate signing request complete. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
 
-        response.EnsureSuccessStatusCode();
+        EnsureRequestSucceeded(response);
 
         _logger.LogDebug($"Certificate signing request completed successfully.");
 
-        var responseJson = await response.Content.ReadAsStringAsync();
+        ReadHttpResponseContent(response, out var responseJson);
         var result = JsonConvert.DeserializeObject<CreateCertificateSignRequestResponse>(responseJson);
 
         _logger.MethodExit();
@@ -152,42 +151,10 @@ public class ArubaClient : IArubaClient
         _logger.LogDebug(
             $"Server certificate update request complete. Status code {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
 
-        response.EnsureSuccessStatusCode();
+        EnsureRequestSucceeded(response);
 
         _logger.LogInformation(
             $"Server certificate for server UUID {serverUuid} on service {serviceName} updated successfully.");
-
-        _logger.MethodExit();
-    }
-
-    public async Task EnableServerCertificate(string serverUuid, string serviceName)
-    {
-        _logger.MethodEntry();
-
-        var url = $"/api/server-cert/name/{serverUuid}/{serviceName}/enable";
-        _logger.LogDebug($"Enabling server certificate at {_baseUrl}{url}");
-
-        var response = await _httpClient.PatchAsync(url, null);
-        _logger.LogDebug(
-            $"Server certificate enable request completed successfully. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
-
-        response.EnsureSuccessStatusCode();
-
-        _logger.MethodExit();
-    }
-
-    public async Task DisableServerCertificate(string serverUuid, string serviceName)
-    {
-        _logger.MethodEntry();
-
-        var url = $"/api/server-cert/name/{serverUuid}/{serviceName}/enable";
-        _logger.LogDebug($"Disabling server certificate at {_baseUrl}{url}");
-
-        var response = await _httpClient.PatchAsync(url, null);
-        _logger.LogDebug(
-            $"Server certificate disable request completed successfully. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
-
-        response.EnsureSuccessStatusCode();
 
         _logger.MethodExit();
     }
@@ -222,11 +189,12 @@ public class ArubaClient : IArubaClient
 
         if (!response.IsSuccessStatusCode)
         {
-            var httpMessage = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-            throw new ArubaAuthenticationException(httpMessage);
+            ReadHttpResponseContent(response, out var errorMessage);
+            
+            throw new ArubaAuthenticationException(errorMessage);
         }
 
-        var responseJson = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        ReadHttpResponseContent(response, out var responseJson);
         var authenticationResponse = JsonConvert.DeserializeObject<TokenEndpointResponse>(responseJson);
 
         _accessToken = authenticationResponse!.AccessToken;
@@ -242,22 +210,30 @@ public class ArubaClient : IArubaClient
 
         _logger.MethodExit();
     }
-    
-    private string GenerateSecurePassword(int length)
-    {
-        _logger.MethodEntry();
-        _logger.LogDebug($"Generating a secure password with {length} characters");
-        const string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_";
-        var random = new SecureRandom();
-        var password = new StringBuilder();
 
-        for (int i = 0; i < length; i++)
+    private void EnsureRequestSucceeded(HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode)
         {
-            int index = random.Next(allowedChars.Length);
-            password.Append(allowedChars[index]);
+            return;
         }
+
+        ReadHttpResponseContent(response, out var errorMessage);
         
-        _logger.MethodExit();
-        return password.ToString();
+        _logger.LogError($"The Aruba API request did not succeed. Status code: {response.StatusCode}. Reason: {response.ReasonPhrase}. Error: {errorMessage}");
+        throw new HttpRequestException($"The Aruba API request did not succeed. Status code: {response.StatusCode}. Reason: {response.ReasonPhrase}. Error: {errorMessage}");
+    }
+    
+    private void ReadHttpResponseContent(HttpResponseMessage response, out string content)
+    {
+        content = "";
+        try
+        {
+            content = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning($"An error occurred reading content from the Aruba API response message: {ex.Message}");
+        }
     }
 }
