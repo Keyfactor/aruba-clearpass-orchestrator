@@ -123,6 +123,7 @@ public class InventoryTests : BaseOrchestratorTest
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
+            JobHistoryId = 123,
         };
         MockClusterServerReturns("clearpass.localhost", "fizzbuzz");
         MockServerCertificateReturns(_mockCertificate);
@@ -130,6 +131,7 @@ public class InventoryTests : BaseOrchestratorTest
 
         Assert.Equal(OrchestratorJobStatusJobResult.Success, result.Result);
         Assert.Null(result.FailureMessage);
+        Assert.Equal(123, result.JobHistoryId);
     }
 
     private void MockServerCertificateReturns(string certificate)

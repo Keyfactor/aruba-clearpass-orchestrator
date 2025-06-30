@@ -13,6 +13,8 @@ namespace Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 
 public abstract class BaseOrchestratorJob
 {
+    protected long JobHistoryId { get; set; } = 0;
+    
     /// <summary>
     /// If an IArubaClient instance is not provided by the constructor, then instantiate a new instance using
     /// the certificate store properties
@@ -23,8 +25,8 @@ public abstract class BaseOrchestratorJob
     /// <param name="jobConfiguration"></param>
     /// <param name="certificateStore"></param>
     /// <param name="properties"></param>
-    /// <returns>The existing IArubaClient if not null, a new IArubaClient if null</returns>
-    protected (IArubaClient?, JobResult?) GetArubaClient(ILogger logger, IPAMSecretResolver resolver, IArubaClient? arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore, ArubaCertificateStoreProperties properties)
+    /// <returns>A JobOperation object wrapping around the ArubaClient and a JobResult</returns>
+    protected JobOperation<IArubaClient> GetArubaClient(ILogger logger, IPAMSecretResolver resolver, IArubaClient? arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore, ArubaCertificateStoreProperties properties)
     {
         try
         {
@@ -47,27 +49,20 @@ public abstract class BaseOrchestratorJob
                 result = arubaClient;
             }
 
-            return (result, null);
+            return JobOperation<IArubaClient>.Success(result);
         }
         catch (ArubaAuthenticationException ex)
         {
             logger.LogError(ex, $"Aruba authentication failed. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
 
-            return (null, new JobResult()
-            {
-                Result = OrchestratorJobStatusJobResult.Failure,
-                FailureMessage = $"Unable to authenticate to Aruba instance. Message: {ex.Message}"
-            });
+            return JobOperation<IArubaClient>.Fail($"Unable to authenticate to Aruba instance. Message: {ex.Message}", JobHistoryId);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, $"An unexpected error occurred while getting Aruba client. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
-            
-            return (null, new JobResult()
-            {
-                Result = OrchestratorJobStatusJobResult.Failure,
-                FailureMessage = $"An unexpected error occurred while getting Aruba client. Message: {ex.Message}"
-            });
+
+            return JobOperation<IArubaClient>.Fail(
+                $"An unexpected error occurred while getting Aruba client. Message: {ex.Message}", JobHistoryId);
         }
     }
 
@@ -78,9 +73,8 @@ public abstract class BaseOrchestratorJob
     /// <param name="arubaClient"></param>
     /// <param name="jobConfiguration"></param>
     /// <param name="certificateStore"></param>
-    /// <returns>If successful, the ClusterServerItem will be populated with a null JobResult object
-    /// If not successful, the ClusterServerItem will be null with a populated JobResult with failure information.</returns>
-    protected (ClusterServerItem?, JobResult?) GetArubaServerInfo(ILogger logger, IArubaClient arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore)
+    /// <returns>A JobOperation object wrapping around the ClusterServerItem and a JobResult</returns>
+    protected JobOperation<ClusterServerItem> GetArubaServerInfo(ILogger logger, IArubaClient arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore)
     {
         logger.LogTrace("Getting server information from Aruba");
         
@@ -102,11 +96,11 @@ public abstract class BaseOrchestratorJob
                 FailureMessage = $"Unable to find store '{storePath}' in Aruba system"
             };
 
-            return (null, jobResult);
+            return JobOperation<ClusterServerItem>.Fail($"Unable to find store '{storePath}' in Aruba system", JobHistoryId);
         }
 
         logger.LogDebug($"Successfully found server '{storePath}' in Aruba. Store UUID: {serverInfo.ServerUuid}");
-        return (serverInfo, null);
+        return JobOperation<ClusterServerItem>.Success(serverInfo);
     }
     
     /// <summary>

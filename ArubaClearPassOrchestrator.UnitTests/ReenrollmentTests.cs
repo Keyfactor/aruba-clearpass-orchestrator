@@ -490,7 +490,8 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
-            JobProperties = _testJobProperties
+            JobProperties = _testJobProperties,
+            JobHistoryId = 123
         };
         MockClusterServerReturns("clearpass.localhost", "fizzbuzz");
         MockCertificateSignRequestReturns(_mockCsr);
@@ -500,6 +501,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         
         Assert.Equal(OrchestratorJobStatusJobResult.Success, result.Result);
         Assert.Null(result.FailureMessage);
+        Assert.Equal(123, result.JobHistoryId);
     }
 
     private void MockCertificateSignRequestReturns(string csr)

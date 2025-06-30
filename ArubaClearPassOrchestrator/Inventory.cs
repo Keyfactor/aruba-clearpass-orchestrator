@@ -1,4 +1,3 @@
-using ArubaClearPassOrchestrator.Clients;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
 using ArubaClearPassOrchestrator.Models.Keyfactor;
 using Keyfactor.Logging;
@@ -37,6 +36,7 @@ public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
         {
             _logger.MethodEntry();
             _logger.LogInformation("Starting inventory job");
+            JobHistoryId = jobConfiguration.JobHistoryId;
 
             var properties =
                 JsonConvert.DeserializeObject<ArubaCertificateStoreProperties>(jobConfiguration.CertificateStoreDetails
@@ -47,20 +47,21 @@ public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
             
             _logger.LogInformation($"Inventory job target: Host: {host}, Server Name: {servername}, Service Name: {serviceName}");
 
-            var (client, clientError) = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
+            var clientResult = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
                 jobConfiguration.CertificateStoreDetails, properties);
-            if (clientError != null)
+            if (!clientResult.IsSuccessful)
             {
-                return clientError;
+                return clientResult.JobResult;
             }
-            _arubaClient = client!;
+            _arubaClient = clientResult.Value;
 
-            var (serverInfo, serverInfoError) = GetArubaServerInfo(_logger, _arubaClient, jobConfiguration,
+            var serverInfoResult = GetArubaServerInfo(_logger, _arubaClient, jobConfiguration,
                 jobConfiguration.CertificateStoreDetails);
-            if (serverInfoError != null)
+            if (!serverInfoResult.IsSuccessful)
             {
-                return serverInfoError;
+                return serverInfoResult.JobResult;
             }
+            var serverInfo = serverInfoResult.Value;
 
             var certificate = _arubaClient.GetServerCertificate(serverInfo.ServerUuid, serviceName).GetAwaiter().GetResult();
 
@@ -85,7 +86,7 @@ public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
             return new JobResult
             {
                 Result = OrchestratorJobStatusJobResult.Success,
-                JobHistoryId = jobConfiguration.JobHistoryId,
+                JobHistoryId = JobHistoryId,
             };
         }
         catch (Exception ex)
@@ -96,7 +97,7 @@ public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
             {
                 Result = OrchestratorJobStatusJobResult.Failure,
                 FailureMessage = $"An unexpected error occurred in inventory job: {ex.Message}",
-                JobHistoryId = jobConfiguration.JobHistoryId,
+                JobHistoryId = JobHistoryId,
             };
         }
     }
