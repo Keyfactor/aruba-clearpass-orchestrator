@@ -29,7 +29,7 @@ public class FileServerClientFactory : IFileServerClientFactory
 
         switch (type)
         {
-            case "S3":
+            case "Amazon S3":
                 fileServerClient = new S3FileServerClient(logger, fileServerHost, fileServerUsername, fileServerPassword);
                 break;
             default:

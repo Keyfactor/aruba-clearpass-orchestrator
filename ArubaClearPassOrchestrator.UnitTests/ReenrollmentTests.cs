@@ -41,7 +41,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
     private readonly ArubaCertificateStoreProperties _testStoreProperties = new ()
     {
         ServiceName = "HTTPS(RSA)",
-        FileServerType = "S3",
+        FileServerType = "Amazon S3",
         FileServerHost = "bogus.com",
         FileServerUsername = "hocus",
         FileServerPassword = "pocus",
@@ -362,7 +362,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
     }
     
     [Theory]
-    [InlineData("S3")]
+    [InlineData("Amazon S3")]
     // [InlineData("File Server")] // TODO: This needs to be implemented
     public void ProcessJob_WhenFileServerIsResolved_UploadsCertificateToServer(string fileServerType)
     {
@@ -412,7 +412,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
 
         var result = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
         Assert.Equal(OrchestratorJobStatusJobResult.Failure, result.Result);
-        Assert.Equal($"Matching file server type 'S3' was found but FileServerClientFactory did not provide a FileServerClient reference", result.FailureMessage);
+        Assert.Equal($"Matching file server type 'Amazon S3' was found but FileServerClientFactory did not provide a FileServerClient reference", result.FailureMessage);
     }
     
     [Fact]

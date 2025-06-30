@@ -56,7 +56,7 @@
               "DisplayName": "File Server Type",
               "Type": "MultipleChoice",
               "DependsOn": "",
-              "DefaultValue": "File Server,S3",
+              "DefaultValue": "File Server,Amazon S3",
               "Required": true,
               "Description": "The type of file server that the certificate will be uploaded to. The file server must be able to serve the file via HTTPS."
             },
@@ -67,7 +67,7 @@
               "DependsOn": "",
               "DefaultValue": "",
               "Required": true,
-              "Description": "The base URL for the file server host without the scheme. (i.e. my-server-name.com if the file server URL is https://my-server-name.com). If using S3, use the bucket name."
+              "Description": "Required. The base URL for the file server host without the scheme. (i.e. my-server-name.com if the file server URL is https://my-server-name.com). See File Server Configuration section in the orchestrator documentation for more details."
             },
             {
               "Name": "FileServerUsername",
@@ -76,7 +76,7 @@
               "DependsOn": "",
               "DefaultValue": "",
               "Required": false,
-              "Description": "The username used to access the file server. Optional if using S3."
+              "Description": "Optional. The username used to access the file server. See File Server Configuration section in the orchestrator documentation for more details."
             },
             {
               "Name": "FileServerPassword",
@@ -85,7 +85,7 @@
               "DependsOn": "",
               "DefaultValue": "",
               "Required": false,
-              "Description": "The password used to access the file server. Optional if using S3."
+              "Description": "Optional. The password used to access the file server. See File Server Configuration section in the orchestrator documentation for more details."
             },
             {
               "Name": "DigestAlgorithm",

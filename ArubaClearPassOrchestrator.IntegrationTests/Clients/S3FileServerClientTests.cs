@@ -23,7 +23,7 @@ public class S3FileServerClientTests : BaseFileServerClientTest<S3FileServerClie
 {
     public S3FileServerClientTests(ITestOutputHelper output) : base(
         output: output,
-        type: "S3",
+        type: "Amazon S3",
         hostname: GetEnvironmentVariable("S3_BUCKET_NAME"),
         username: GetEnvironmentVariable("S3_ACCESS_KEY"),
         password: GetEnvironmentVariable("S3_SECRET_ACCESS_KEY"))

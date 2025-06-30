@@ -205,7 +205,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         IFileServerClient client;
         switch (fileServerType)
         {
-            case "S3":
+            case "Amazon S3":
                 client = _fileServerClientFactory.CreateFileServerClient(_logger, fileServerType, host, username,
                     password);
                 break;
