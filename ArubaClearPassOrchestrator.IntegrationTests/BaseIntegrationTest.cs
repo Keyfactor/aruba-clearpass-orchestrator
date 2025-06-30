@@ -60,4 +60,9 @@ public abstract class BaseIntegrationTest
         
         return new ArubaClient(Logger, false, arubaHost, arubaClientId, arubaClientSecret);
     }
+
+    protected static string GetEnvironmentVariable(string name)
+    {
+        return Environment.GetEnvironmentVariable(name) ?? throw new ArgumentException($"Environment variable {name} not found");
+    }
 }

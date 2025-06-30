@@ -24,9 +24,9 @@ public class S3FileServerClientTests : BaseFileServerClientTest<S3FileServerClie
     public S3FileServerClientTests(ITestOutputHelper output) : base(
         output: output,
         type: "S3",
-        hostname: Environment.GetEnvironmentVariable("S3_BUCKET_NAME"),
-        username: Environment.GetEnvironmentVariable("S3_ACCESS_KEY"),
-        password: Environment.GetEnvironmentVariable("S3_SECRET_ACCESS_KEY"))
+        hostname: GetEnvironmentVariable("S3_BUCKET_NAME"),
+        username: GetEnvironmentVariable("S3_ACCESS_KEY"),
+        password: GetEnvironmentVariable("S3_SECRET_ACCESS_KEY"))
     {
         SkipTestUnlessEnvEnabled("S3_RUN_TESTS");
     }

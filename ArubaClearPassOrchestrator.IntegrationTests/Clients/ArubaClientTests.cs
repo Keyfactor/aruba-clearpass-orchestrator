@@ -30,12 +30,12 @@ public class ArubaClientTests : BaseIntegrationTest
     {
         SkipTestUnlessEnvEnabled("ARUBA_RUN_TESTS");
         
-        var arubaHost = Environment.GetEnvironmentVariable("ARUBA_HOST");
-        var arubaClientId = Environment.GetEnvironmentVariable("ARUBA_CLIENT_ID");
-        var arubaClientSecret = Environment.GetEnvironmentVariable("ARUBA_CLIENT_SECRET");
+        var arubaHost = GetEnvironmentVariable("ARUBA_HOST");
+        var arubaClientId = GetEnvironmentVariable("ARUBA_CLIENT_ID");
+        var arubaClientSecret = GetEnvironmentVariable("ARUBA_CLIENT_SECRET");
         
-        _serverUuid = Environment.GetEnvironmentVariable("ARUBA_SERVER_UUID");
-        _serviceName = Environment.GetEnvironmentVariable("ARUBA_SERVICE_NAME");
+        _serverUuid = GetEnvironmentVariable("ARUBA_SERVER_UUID");
+        _serviceName = GetEnvironmentVariable("ARUBA_SERVICE_NAME");
 
         
         _sut = new ArubaClient(Logger, false, arubaHost, arubaClientId, arubaClientSecret);

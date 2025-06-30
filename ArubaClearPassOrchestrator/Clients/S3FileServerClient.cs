@@ -27,7 +27,7 @@ namespace ArubaClearPassOrchestrator.Clients;
 
 public class S3FileServerClient : BaseFileServerClient, IFileServerClient
 {
-    private readonly AWSCredentials? _credentials;
+    private readonly AWSCredentials _credentials;
     private readonly string _bucketName;
     private readonly ILogger _logger;
     private const int PresignedUrlExpiryMinutes = 30;
@@ -140,7 +140,7 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
     /// </summary>
     /// <param name="region">An optional regional specification</param>
     /// <returns>An IAmazonS3 interface to talk to S3</returns>
-    private IAmazonS3 GetS3Client(RegionEndpoint? region = null)
+    private IAmazonS3 GetS3Client(RegionEndpoint region = null)
     {
         var regionString = region == null ? "(not provided)" : region.DisplayName;
         _logger.LogDebug($"Getting S3 client for region: {regionString}");

@@ -40,7 +40,7 @@ public abstract class BaseOrchestratorJob
     /// <param name="certificateStore"></param>
     /// <param name="properties"></param>
     /// <returns>A JobOperation object wrapping around the ArubaClient and a JobResult</returns>
-    protected JobOperation<IArubaClient> GetArubaClient(ILogger logger, IPAMSecretResolver resolver, IArubaClient? arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore, ArubaCertificateStoreProperties properties)
+    protected JobOperation<IArubaClient> GetArubaClient(ILogger logger, IPAMSecretResolver resolver, IArubaClient arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore, ArubaCertificateStoreProperties properties)
     {
         try
         {

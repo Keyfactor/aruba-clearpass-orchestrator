@@ -28,5 +28,5 @@ public class TokenEndpointResponse
     public string TokenType { get; set; }
     
     [JsonProperty("scope")]
-    public string? Scope { get; set; }
+    public string Scope { get; set; }
 }
