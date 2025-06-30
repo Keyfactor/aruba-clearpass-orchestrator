@@ -32,7 +32,7 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
     private readonly ILogger _logger;
     private const int PresignedUrlExpiryMinutes = 30;
     
-    public S3FileServerClient(ILogger logger, string bucketName, string? accessKey, string? secretAccessKey)
+    public S3FileServerClient(ILogger logger, string bucketName, string accessKey, string secretAccessKey)
     {
         _logger = logger;
         
@@ -60,7 +60,7 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
     /// <returns>A pre-signed URL to access the certificate.</returns>
     public async Task<string> UploadCertificate(string key, X509Certificate2 certificate)
     {
-        string? certificateUrl = null;
+        string certificateUrl = null;
         try
         {
             _logger.MethodEntry();

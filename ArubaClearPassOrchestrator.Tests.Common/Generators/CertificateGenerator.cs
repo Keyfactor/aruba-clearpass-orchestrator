@@ -68,7 +68,6 @@ public class CertificateGenerator
         certGen.SetNotBefore(DateTime.UtcNow.AddDays(-1));
         certGen.SetNotAfter(DateTime.UtcNow.AddYears(1));
         certGen.SetPublicKey(keyPair.Public);
-        certGen.SetSignatureAlgorithm("SHA256withRSA");
 
         certGen.AddExtension(X509Extensions.BasicConstraints, false, new BasicConstraints(false));
         certGen.AddExtension(X509Extensions.KeyUsage, false, new KeyUsage(KeyUsage.DigitalSignature | KeyUsage.KeyEncipherment));
@@ -128,7 +127,6 @@ public class CertificateGenerator
         certGen.SetNotBefore(DateTime.UtcNow.AddDays(-1));
         certGen.SetNotAfter(DateTime.UtcNow.AddYears(10));
         certGen.SetPublicKey(keyPair.Public);
-        certGen.SetSignatureAlgorithm("SHA256withRSA");
         certGen.AddExtension(X509Extensions.BasicConstraints, true, new BasicConstraints(true));
 
         return certGen.Generate(new Asn1SignatureFactory("SHA256withRSA", signerKey));
@@ -145,7 +143,6 @@ public class CertificateGenerator
         certGen.SetNotBefore(DateTime.UtcNow.AddDays(-1));
         certGen.SetNotAfter(DateTime.UtcNow.AddYears(1));
         certGen.SetPublicKey(keyPair.Public);
-        certGen.SetSignatureAlgorithm("SHA256withRSA");
         certGen.AddExtension(X509Extensions.BasicConstraints, false, new BasicConstraints(false));
         certGen.AddExtension(X509Extensions.KeyUsage, false, new KeyUsage(KeyUsage.DigitalSignature | KeyUsage.KeyEncipherment));
 

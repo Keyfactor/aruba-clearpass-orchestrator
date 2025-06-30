@@ -25,7 +25,7 @@ public class FileServerClientFactory : IFileServerClientFactory
     {
         logger.MethodEntry();
         
-        IFileServerClient? fileServerClient = null;
+        IFileServerClient fileServerClient = null;
 
         switch (type)
         {

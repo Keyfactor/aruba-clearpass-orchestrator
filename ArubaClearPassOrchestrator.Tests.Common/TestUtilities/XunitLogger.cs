@@ -14,6 +14,7 @@
 
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
+#pragma warning disable CS8633 // Nullability in constraints for type parameter doesn't match the constraints for type parameter in implicitly implemented interface method'.
 
 namespace ArubaClearPassOrchestrator.Tests.Common.TestUtilities;
 
@@ -33,7 +34,7 @@ public class XunitLogger : ILogger
         LogLevel logLevel, 
         EventId eventId, 
         TState state, 
-        Exception exception, 
+        Exception? exception, 
         Func<TState, Exception?, string> formatter)
     {
         _output.WriteLine($"[{logLevel}] {formatter(state, exception)}");

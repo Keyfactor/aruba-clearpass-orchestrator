@@ -37,7 +37,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     public string ExtensionName => "Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Reenrollment";
     private readonly ILogger _logger = LogHandler.GetClassLogger<Reenrollment>();
 
-    private IArubaClient? _arubaClient;
+    private IArubaClient _arubaClient;
     private IFileServerClientFactory _fileServerClientFactory;
     private readonly IPAMSecretResolver _resolver;
 
@@ -202,7 +202,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         var username = _resolver.Resolve(properties.FileServerUsername);
         var password = _resolver.Resolve(properties.FileServerPassword);
 
-        IFileServerClient? client;
+        IFileServerClient client;
         switch (fileServerType)
         {
             case "S3":
@@ -275,7 +275,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     private JobOperation<string> UploadCertificateAndGetUrl(string servername, string service,
         IFileServerClient fileServerClient, X509Certificate2 certificate)
     {
-        string? certificateUrl = null;
+        string certificateUrl = null;
         try
         {
             var key = $"{servername}_{service}.pfx";
@@ -420,7 +420,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         var ecc521 = "nist/secg curve over a 521 bit prime field";
 
         var acceptedArubaValues = new[] { rsa2048, rsa3072, rsa4096, ecc256, ecc384, ecc521 };
-        string? encryptionAlgorithm = null;
+        string encryptionAlgorithm = null;
 
         switch (keyType)
         {
