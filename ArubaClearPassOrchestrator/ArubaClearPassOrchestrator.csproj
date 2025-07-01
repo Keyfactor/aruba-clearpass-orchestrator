@@ -2,20 +2,14 @@
 
     <PropertyGroup>
         <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>disable</Nullable>
-        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <OutputPath>bin\Release/</OutputPath>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
       <DebugType>none</DebugType>
-      <WarningLevel>4</WarningLevel>
+      <DebugSymbols>false</DebugSymbols>
     </PropertyGroup>
 
     <ItemGroup>
