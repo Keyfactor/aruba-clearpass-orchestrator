@@ -14,7 +14,7 @@
 
 namespace ArubaClearPassOrchestrator.Models.Keyfactor;
 
-public class JobPropertyFields
+public class ReenrollmentKeyPropertyFields
 {
     public string SubjectText { get; set; }
     

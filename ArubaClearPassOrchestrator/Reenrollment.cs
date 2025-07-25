@@ -35,10 +35,11 @@ namespace Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 {
     public string ExtensionName => "Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Reenrollment";
-    private readonly ILogger _logger = LogHandler.GetClassLogger<Reenrollment>();
-
+    
     private IArubaClient _arubaClient;
-    private IFileServerClientFactory _fileServerClientFactory;
+    
+    private readonly ILogger _logger;
+    private readonly IFileServerClientFactory _fileServerClientFactory;
     private readonly IPAMSecretResolver _resolver;
 
     public Reenrollment(IPAMSecretResolver resolver)
@@ -365,7 +366,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     /// </summary>
     /// <param name="properties"></param>
     /// <returns></returns>
-    private JobOperation<JobPropertyFields> ParseJobPropertyFields(Dictionary<string, object> properties)
+    private JobOperation<ReenrollmentKeyPropertyFields> ParseJobPropertyFields(Dictionary<string, object> properties)
     {
         _logger.MethodEntry();
         var errors = new StringBuilder();
@@ -390,17 +391,17 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
         if (errors.Length > 0)
         {
-            return JobOperation<JobPropertyFields>.Fail(errors.ToString(), JobHistoryId);
+            return JobOperation<ReenrollmentKeyPropertyFields>.Fail(errors.ToString(), JobHistoryId);
         }
 
-        var result = new JobPropertyFields()
+        var result = new ReenrollmentKeyPropertyFields()
         {
             SubjectText = $"{subjectText}",
             KeySize = $"{keySize}",
             KeyType = $"{keyType}",
         };
         _logger.MethodExit();
-        return JobOperation<JobPropertyFields>.Success(result);
+        return JobOperation<ReenrollmentKeyPropertyFields>.Success(result);
     }
 
     /// <summary>

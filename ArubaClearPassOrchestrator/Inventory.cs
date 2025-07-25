@@ -26,9 +26,10 @@ namespace Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
 {
     public string ExtensionName => "Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Inventory";
-    private readonly ILogger _logger;
 
     private IArubaClient _arubaClient;
+    
+    private readonly ILogger _logger;
     private readonly IPAMSecretResolver _resolver;
 
     public Inventory(IPAMSecretResolver resolver)
