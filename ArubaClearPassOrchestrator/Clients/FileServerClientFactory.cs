@@ -24,17 +24,29 @@ public class FileServerClientFactory : IFileServerClientFactory
         string fileServerPassword)
     {
         logger.MethodEntry();
-        
         IFileServerClient fileServerClient = null;
 
-        switch (type)
+        try
         {
-            case "Amazon S3":
-                fileServerClient = new S3FileServerClient(logger, fileServerHost, fileServerUsername, fileServerPassword);
-                break;
-            default:
-                logger.LogWarning($"No server type mapping found for '{type}'. Returning a null file server client.");
-                break;
+            switch (type)
+            {
+                case "Amazon S3":
+                    fileServerClient =
+                        new S3FileServerClient(logger, fileServerHost, fileServerUsername, fileServerPassword);
+                    break;
+                default:
+                    logger.LogWarning(
+                        $"No server type mapping found for '{type}'. Returning a null file server client.");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, $"An error occurred getting the file server client: {ex.Message}");
+        }
+        finally
+        {
+            logger.MethodExit();
         }
 
         return fileServerClient;

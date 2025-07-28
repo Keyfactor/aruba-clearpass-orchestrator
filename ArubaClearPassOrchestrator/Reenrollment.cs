@@ -79,7 +79,6 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 $"Re-Enrollment job target: Host: {host}, Server Name: {servername}, Service Name: {serviceName}");
             _logger.LogDebug(
                 $"Re-Enrollment job properties: {JsonConvert.SerializeObject(jobConfiguration.JobProperties)}");
-            _logger.LogDebug($"Job Config: {JsonConvert.SerializeObject(jobConfiguration)}");
 
             var jobPropertiesResult = ParseJobPropertyFields(jobConfiguration.JobProperties);
             if (!jobPropertiesResult.IsSuccessful)
@@ -130,6 +129,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             {
                 return serverInfoResult.JobResult;
             }
+
             var serverInfo = serverInfoResult.Value;
 
             var fileServerClientResult = GetFileServerClient(properties);
@@ -137,6 +137,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             {
                 return fileServerClientResult.JobResult;
             }
+
             var fileServerClient = fileServerClientResult.Value;
 
             var csrResult =
@@ -145,6 +146,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             {
                 return csrResult.JobResult;
             }
+
             var csr = csrResult.Value;
 
             var certificateResult = SubmitReenrollmentUpdate(submitReenrollmentUpdate, csr);
@@ -152,6 +154,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             {
                 return certificateResult.JobResult;
             }
+
             var certificate = certificateResult.Value;
 
             var certificateUrlResult =
@@ -160,6 +163,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             {
                 return certificateUrlResult.JobResult;
             }
+
             var certificateUrl = certificateUrlResult.Value;
 
             var uploadResult =
@@ -170,7 +174,6 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             }
 
             _logger.LogInformation("Re-Enrollment (ODKG) job completed successfully");
-            _logger.MethodExit();
 
             return new JobResult
             {
@@ -189,6 +192,10 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 JobHistoryId = JobHistoryId,
             };
         }
+        finally
+        {
+            _logger.MethodExit();
+        }
     }
 
     /// <summary>
@@ -198,6 +205,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     /// <returns>Returns a IFileServerClient if the name matches an existing interface. Otherwise, it returns null with a failed JobResult.</returns>
     private JobOperation<IFileServerClient> GetFileServerClient(ArubaCertificateStoreProperties properties)
     {
+        _logger.MethodEntry();
+        
         var fileServerType = properties.FileServerType;
         var host = _resolver.Resolve(properties.FileServerHost);
         var username = _resolver.Resolve(properties.FileServerUsername);
@@ -221,6 +230,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
         if (client == null)
         {
+            _logger.MethodExit();
+            
             _logger.LogError(
                 $"A matching file server type '{fileServerType}' was not provided by the FileServerClientFactory! Please contact Keyfactor Support for assistance.");
 
@@ -228,6 +239,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             return JobOperation<IFileServerClient>.Fail(
                 $"Matching file server type '{fileServerType}' was found but FileServerClientFactory did not provide a FileServerClient reference", JobHistoryId);
         }
+
+        _logger.MethodExit();
 
         _logger.LogDebug($"Successfully resolved file server type {fileServerType}");
         return JobOperation<IFileServerClient>.Success(client);
@@ -241,19 +254,22 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     private JobOperation<string> GetCertificateSigningRequest(CertificateSubjectInformation subjectInformation,
         string encryptionAlgorithm, string digestAlgorithm)
     {
+        _logger.MethodEntry();
+
         try
         {
             var password = GenerateSecurePassword(16);
             _logger.LogDebug(
                 $"Creating CSR request in Aruba for subject CN {subjectInformation.CommonName} with encryption algorithm {encryptionAlgorithm} and {digestAlgorithm}");
             var response = _arubaClient
-                .CreateCertificateSignRequest(subjectInformation, password, encryptionAlgorithm, digestAlgorithm).GetAwaiter()
+                .CreateCertificateSignRequest(subjectInformation, password, encryptionAlgorithm, digestAlgorithm)
+                .GetAwaiter()
                 .GetResult();
             var certificateSignRequest = response.CertificateSignRequest;
 
             ParseAndLogCsrMetadata(certificateSignRequest);
             _logger.LogDebug($"CSR request completed successfully.");
-            
+
             return JobOperation<string>.Success(certificateSignRequest);
         }
         catch (Exception ex)
@@ -262,6 +278,10 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 $"Unable to create certificate sign request. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
             return JobOperation<string>.Fail(
                 $"An error occurred while performing CSR Generation in Aruba. Error: {ex.Message}", JobHistoryId);
+        }
+        finally
+        {
+            _logger.MethodExit();
         }
     }
 
@@ -276,6 +296,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     private JobOperation<string> UploadCertificateAndGetUrl(string servername, string service,
         IFileServerClient fileServerClient, X509Certificate2 certificate)
     {
+        _logger.MethodEntry();
+        
         string certificateUrl = null;
         try
         {
@@ -288,9 +310,13 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         {
             _logger.LogError(ex,
                 $"Unable to upload certificate to file server. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
-            
+
             return JobOperation<string>.Fail(
                 $"An error occurred while uploading certificate contents to file server: {ex.Message}", JobHistoryId);
+        }
+        finally
+        {
+            _logger.MethodExit();
         }
 
         return JobOperation<string>.Success(certificateUrl);
@@ -307,6 +333,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     private JobOperation UpdateServerCertificate(string servername, string serverUuid, string service,
         string certificateUrl)
     {
+        _logger.MethodEntry();
+
         try
         {
             _logger.LogDebug($"Updating certificate in Aruba for server {servername} and service {service}");
@@ -318,7 +346,12 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         {
             _logger.LogError(ex,
                 $"Unable to update certificate in Aruba. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
-            return JobOperation.Fail($"An error occurred while updating certificate in Aruba: {ex.Message}", JobHistoryId);
+            return JobOperation.Fail($"An error occurred while updating certificate in Aruba: {ex.Message}",
+                JobHistoryId);
+        }
+        finally
+        {
+            _logger.MethodExit();
         }
 
         return JobOperation.Success("Server certificate updated successfully");
@@ -334,6 +367,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     private JobOperation<X509Certificate2> SubmitReenrollmentUpdate(SubmitReenrollmentCSR submitReenrollmentUpdate,
         string csr)
     {
+        _logger.MethodEntry();
+
         try
         {
             _logger.LogDebug($"Submitting enrollment CSR to Command");
@@ -344,7 +379,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 _logger.LogError($"Command returned a null certificate from the CSR.");
 
                 return JobOperation<X509Certificate2>.Fail(
-                    $"Command returned a null certificate from the CSR. Did the subject information included in the CSR match the subject information on the ODKG request? Check the Keyfactor Command logs for error information.", JobHistoryId);
+                    $"Command returned a null certificate from the CSR. Did the subject information included in the CSR match the subject information on the ODKG request? Check the Keyfactor Command logs for error information.",
+                    JobHistoryId);
             }
 
             _logger.LogDebug($"CSR Enrollment completed successfully");
@@ -354,9 +390,14 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         {
             _logger.LogError(ex,
                 $"Unable to submit CSR to Command. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
-            
+
             return JobOperation<X509Certificate2>.Fail(
-                $"An error occurred while submitting re-enrollment update: {ex.Message}. Check the Keyfactor Command logs for more information.", JobHistoryId);
+                $"An error occurred while submitting re-enrollment update: {ex.Message}. Check the Keyfactor Command logs for more information.",
+                JobHistoryId);
+        }
+        finally
+        {
+            _logger.MethodExit();
         }
     }
 
@@ -391,6 +432,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
         if (errors.Length > 0)
         {
+            _logger.MethodExit();
             return JobOperation<ReenrollmentKeyPropertyFields>.Fail(errors.ToString(), JobHistoryId);
         }
 
@@ -400,6 +442,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             KeySize = $"{keySize}",
             KeyType = $"{keyType}",
         };
+        
         _logger.MethodExit();
         return JobOperation<ReenrollmentKeyPropertyFields>.Success(result);
     }
@@ -413,6 +456,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     /// <returns></returns>
     private JobOperation<string> MapKeySizeAndTypeToArubaEncryptionAlgorithm(string keyType, string keySize)
     {
+        _logger.MethodEntry();
+        
         var rsa2048 = "2048-bit rsa";
         var rsa3072 = "3072-bit rsa";
         var rsa4096 = "4096-bit rsa";
@@ -466,6 +511,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
                 break;
         }
+
+        _logger.MethodExit();
 
         // If no match found, return failure
         if (encryptionAlgorithm == null)

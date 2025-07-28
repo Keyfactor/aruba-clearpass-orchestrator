@@ -4,19 +4,26 @@ The Aruba ClearPass Orchestrator Extension is an integration that can inventory 
 
 * Aruba
 
-## File Store Configuration
+## File Server Configuration
 
-The Aruba ClearPass API requires an HTTP-accessible URL for certificates when performing a re-enrollment. The URL must be accessible by Aruba's servers. There are a number of File Store types supported by this integration.
+The Aruba ClearPass API requires an HTTP-accessible URL for certificates when performing a re-enrollment. The URL **must** be accessible by the Aruba ClearPass server. Currently, the `FileServerType` types accepted are:
+
+- [Amazon S3](#amazon-s3)
+
+Please see each related section for information on how to configure your certificate store type with the associated file server type.
 
 ### Amazon S3
 
-If you wish to use Amazon S3 as your file store, we recommend you review the [Amazon S3 Best Practices](https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html) documentation. For this file store, you will need to create an S3 bucket. **It is recommended your bucket has public access disabled**. You will need an IAM role that has access to the S3 bucket, can determine the region the S3 bucket is located in, can upload the certificate contents to S3, and will need to be able to generate a pre-signed URL for the uploaded certificate file.
+The `Amazon S3` File Server Type supports operations directly to AWS S3 and to S3-compatible services (i.e. Cloudian Hyperstore, MinIO, etc.). If configured to talk to AWS S3 services, we recommend you review the [Amazon S3 Best Practices](https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html) documentation. Otherwise, please consult your AWS-compatible service's documentation for best practices and access policies.
+
+For this file store type, certificate contents will be uploaded to a bucket, and a temporary pre-signed URL will be generated for Aruba ClearPass to access the object via HTTPS.  You will need to configure your provider's security roles that have access to the S3 bucket, can determine the region the S3 bucket is located in, can upload the certificate contents to the bucket, and will need to be able to generate a pre-signed URL for the uploaded certificate file (see [an example IAM policy](#example-aws-iam-policy) if you are targeting AWS).
 
 These are the File Server configurations on the Certificate Store setup:
 - File Server Type
     - This value will need to be **Amazon S3**.
 - File Server Host
-    - This will be the **S3 bucket name**. S3 bucket names are globally unique identifiers.
+    - If targeting AWS S3, this will be the **S3 bucket name**. S3 bucket names are globally unique identifiers.
+    - If targeting an S3-compatible service (i.e. Cloudian Hyperstore, MinIO, etc.), the host will be in the format `<service-url>;<bucket-name>`. For example, `https://s3-us-west1.cloudian.example.com:443;your-bucket-name`.
 - File Server Username
     - Optional. If you wish to use IAM user credentials, this will be the **Access Key** for the IAM user credentials.
     - If not provided, the orchestrator can resolve credentials. See the AWS [Credential and profile resolution](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/creds-assign.html) for more information.
@@ -25,6 +32,7 @@ These are the File Server configurations on the Certificate Store setup:
     - If not provided, the orchestrator can resolve credentials. See the AWS [Credential and profile resolution](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/creds-assign.html) for more information.
 
 
+#### Example AWS IAM Policy
 Here is an example IAM policy with the minimum permissions necessary:
 
 ```json

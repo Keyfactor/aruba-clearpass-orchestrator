@@ -42,6 +42,8 @@ public abstract class BaseOrchestratorJob
     /// <returns>A JobOperation object wrapping around the ArubaClient and a JobResult</returns>
     protected JobOperation<IArubaClient> GetArubaClient(ILogger logger, IPAMSecretResolver resolver, IArubaClient arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore, ArubaCertificateStoreProperties properties)
     {
+        logger.MethodEntry();
+
         try
         {
             var serverUsername = ResolvePAMField(logger, resolver, jobConfiguration.ServerUsername, "Server Username");
@@ -69,14 +71,20 @@ public abstract class BaseOrchestratorJob
         {
             logger.LogError(ex, $"Aruba authentication failed. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
 
-            return JobOperation<IArubaClient>.Fail($"Unable to authenticate to Aruba instance. Message: {ex.Message}", JobHistoryId);
+            return JobOperation<IArubaClient>.Fail($"Unable to authenticate to Aruba instance. Message: {ex.Message}",
+                JobHistoryId);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, $"An unexpected error occurred while getting Aruba client. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
+            logger.LogError(ex,
+                $"An unexpected error occurred while getting Aruba client. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
 
             return JobOperation<IArubaClient>.Fail(
                 $"An unexpected error occurred while getting Aruba client. Message: {ex.Message}", JobHistoryId);
+        }
+        finally
+        {
+            logger.MethodExit();
         }
     }
 
@@ -90,7 +98,8 @@ public abstract class BaseOrchestratorJob
     /// <returns>A JobOperation object wrapping around the ClusterServerItem and a JobResult</returns>
     protected JobOperation<ClusterServerItem> GetArubaServerInfo(ILogger logger, IArubaClient arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore)
     {
-        logger.LogTrace("Getting server information from Aruba");
+        logger.MethodEntry();
+        logger.LogDebug("Getting server information from Aruba");
         
         var servers = arubaClient.GetClusterServers().GetAwaiter().GetResult();
         var storePath = certificateStore.StorePath;
@@ -102,16 +111,13 @@ public abstract class BaseOrchestratorJob
         if (serverInfo == null)
         {
             logger.LogError($"ERROR: Unable to find store '{storePath}' in Aruba system");
-
-            var jobResult = new JobResult()
-            {
-                Result = OrchestratorJobStatusJobResult.Failure,
-                JobHistoryId = jobConfiguration.JobHistoryId,
-                FailureMessage = $"Unable to find store '{storePath}' in Aruba system"
-            };
+            
+            logger.MethodExit();
 
             return JobOperation<ClusterServerItem>.Fail($"Unable to find store '{storePath}' in Aruba system", JobHistoryId);
         }
+
+        logger.MethodExit();
 
         logger.LogDebug($"Successfully found server '{storePath}' in Aruba. Store UUID: {serverInfo.ServerUuid}");
         return JobOperation<ClusterServerItem>.Success(serverInfo);

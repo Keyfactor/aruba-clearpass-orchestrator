@@ -57,14 +57,14 @@
               "DisplayName": "File Server Type",
               "Type": "MultipleChoice",
               "DependsOn": "",
-              "DefaultValue": "File Server,Amazon S3",
+              "DefaultValue": "Amazon S3",
               "Required": true,
               "Description": "The type of file server that the certificate will be uploaded to. The file server must be able to serve the file via HTTPS."
             },
             {
               "Name": "FileServerHost",
               "DisplayName": "File Server Host",
-              "Type": "Secret",
+              "Type": "String",
               "DependsOn": "",
               "DefaultValue": "",
               "Required": true,

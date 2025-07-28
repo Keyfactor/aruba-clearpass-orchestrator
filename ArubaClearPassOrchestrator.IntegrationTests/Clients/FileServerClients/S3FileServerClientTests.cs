@@ -17,8 +17,11 @@ using ArubaClearPassOrchestrator.Tests.Common.Generators;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
-namespace ArubaClearPassOrchestrator.IntegrationTests.Clients;
+namespace ArubaClearPassOrchestrator.IntegrationTests.Clients.FileServerClients;
 
+/// <summary>
+/// Tests the integration with Amazon S3 directly
+/// </summary>
 public class S3FileServerClientTests : BaseFileServerClientTest<S3FileServerClient>
 {
     public S3FileServerClientTests(ITestOutputHelper output) : base(
@@ -39,6 +42,4 @@ public class S3FileServerClientTests : BaseFileServerClientTest<S3FileServerClie
         Assert.NotNull(certificateUrl);
         Logger.LogInformation($"Certificate URL: {certificateUrl}");
     }
-    
-    
 }

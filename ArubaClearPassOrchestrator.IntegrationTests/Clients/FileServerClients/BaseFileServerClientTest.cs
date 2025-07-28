@@ -14,12 +14,9 @@
 
 using ArubaClearPassOrchestrator.Clients;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
-using ArubaClearPassOrchestrator.Tests.Common.Exceptions;
-using ArubaClearPassOrchestrator.Tests.Common.TestUtilities;
-using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
-namespace ArubaClearPassOrchestrator.IntegrationTests.Clients;
+namespace ArubaClearPassOrchestrator.IntegrationTests.Clients.FileServerClients;
 
 [Trait("Category", "Integration")]
 public abstract class BaseFileServerClientTest<T> : BaseIntegrationTest where T : IFileServerClient

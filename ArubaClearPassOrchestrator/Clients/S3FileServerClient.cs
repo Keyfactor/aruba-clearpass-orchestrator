@@ -28,19 +28,22 @@ namespace ArubaClearPassOrchestrator.Clients;
 public class S3FileServerClient : BaseFileServerClient, IFileServerClient
 {
     private readonly AWSCredentials _credentials;
+    private readonly string _serviceUrl; // Service Endpoint for S3-compatible API services (Cloudian, MinIO, etc.)
     private readonly string _bucketName;
     private readonly ILogger _logger;
+    
     private const int PresignedUrlExpiryMinutes = 30;
     
     public S3FileServerClient(ILogger logger, string bucketName, string accessKey, string secretAccessKey)
     {
         _logger = logger;
+        _logger.MethodEntry();
         
         _logger.LogDebug($"Creating an S3 file server client for bucket URL {bucketName}");
 
         if (!string.IsNullOrWhiteSpace(accessKey) && !string.IsNullOrWhiteSpace(secretAccessKey))
         {
-            _logger.LogDebug("Basic AWS credentials with access key and secret access key being used");
+            _logger.LogDebug("Using basic AWS credentials with access key and secret access key");
             _credentials = new BasicAWSCredentials(accessKey, secretAccessKey);
         }
         else
@@ -49,7 +52,23 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
             _credentials = null; // Let the below code handle resolving the default credentials
         }
 
-        _bucketName = bucketName;
+        if (!string.IsNullOrWhiteSpace(bucketName) && bucketName.Contains(';'))
+        {
+            _logger.LogDebug("Splitting service URL from bucket name");
+            var split = bucketName.Split(";");
+
+            _serviceUrl = split[0];
+            _bucketName = split[1];
+        }
+        else
+        {
+            _logger.LogDebug($"Using supplied bucket name value");
+            _bucketName = bucketName;
+        }
+
+        _logger.LogDebug($"Service URL: {_serviceUrl ?? "(not provided)"}, Bucket Name: {_bucketName}");
+        
+        _logger.MethodExit();
     }
     
     /// <summary>
@@ -65,17 +84,17 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
         {
             _logger.MethodEntry();
             var region = await GetRegionEndpointOfBucket(_bucketName);
-            
+
             // Need to recreate the S3 client to point at the S3 bucket region
             var client = GetS3Client(region);
-            
+
             _logger.LogDebug("Converting certificate contents to string");
-            
+
             // _logger.LogDebug($"Certificate: {JsonConvert.SerializeObject(certificate)}");
             // _logger.LogDebug($"Raw Data: {certificate.RawData}, GetRawCertData: {certificate.GetRawCertData()}, GetRawCertDataString: {certificate.GetRawCertDataString()}");
             string pem = ConvertToPem(certificate);
             byte[] data = Encoding.UTF8.GetBytes(pem);
-            
+
             _logger.LogDebug($"Uploading the certificate to S3. Bucket name: {_bucketName}, Key: {key}");
 
             await client.PutObjectAsync(new PutObjectRequest()
@@ -85,11 +104,12 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
                 ContentType = "application/x-pem-file",
                 InputStream = new MemoryStream(data)
             });
-            
-            _logger.LogInformation($"Successfully uploaded the certificate to S3. Bucket name: {_bucketName}, Key: {key}");
-            
+
+            _logger.LogInformation(
+                $"Successfully uploaded the certificate to S3. Bucket name: {_bucketName}, Key: {key}");
+
             var expiryDate = DateTime.UtcNow.AddMinutes(PresignedUrlExpiryMinutes);
-            
+
             _logger.LogDebug($"Creating a pre-signed URL for certificate. Expiration (UTC): {expiryDate:o}");
 
             certificateUrl = await client.GetPreSignedURLAsync(new GetPreSignedUrlRequest()
@@ -99,15 +119,18 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
                 Expires = expiryDate,
                 Verb = HttpVerb.GET,
             });
-            
+
             _logger.LogInformation($"Pre-signed URL for certificate created. Expiration (UTC): {expiryDate:o}");
-            
-            _logger.MethodExit();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"An error occurred uploading certificate contents to S3. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
+            _logger.LogError(ex,
+                $"An error occurred uploading certificate contents to S3. Message: {ex.Message}, Stack Trace: {ex.StackTrace}");
             throw;
+        }
+        finally
+        {
+            _logger.MethodExit();
         }
         
         return certificateUrl;
@@ -117,19 +140,25 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
     /// Although S3 buckets are globally unique, the S3 client needs to point the writer
     /// to the appropriate region. To get the region, we can leverage the S3Client SDK
     /// to get the region from the bucket name.
+    ///
+    /// If using an S3-compatible service, the region endpoint should still be inferred
+    /// by the bucket name, but it may be simply mocked (i.e. always "us-east-1" or "")
     /// </summary>
     /// <param name="bucketName">The S3 bucket name</param>
     /// <returns>The region endpoint associated with the S3 bucket.</returns>
     private async Task<RegionEndpoint> GetRegionEndpointOfBucket(string bucketName)
     {
         _logger.MethodEntry();
+        
         _logger.LogDebug($"Creating an S3 client to look up region for bucket {bucketName}");
         var client = GetS3Client(null);
         _logger.LogDebug($"Determining region endpoint for S3 bucket {bucketName}");
+        
         var response = await client.GetBucketLocationAsync(bucketName);
         var location = DetermineRegionEndpointOfBucket(response);
         
         _logger.LogDebug($"Got region of S3 bucket {bucketName}. Region: {location.DisplayName}");
+        
         _logger.MethodExit();
         return location;
     }
@@ -142,24 +171,42 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
     /// <returns>An IAmazonS3 interface to talk to S3</returns>
     private IAmazonS3 GetS3Client(RegionEndpoint region = null)
     {
+        _logger.MethodEntry();
+        
         var regionString = region == null ? "(not provided)" : region.DisplayName;
         _logger.LogDebug($"Getting S3 client for region: {regionString}");
         
-        // To lookup an S3 bucket location, if no region is specified provide us-east-1 as a default for the lookup
         var config = new AmazonS3Config
         {
-            RegionEndpoint = region ?? RegionEndpoint.USEast1 // Any default, just for the call to succeed
+            ServiceURL = _serviceUrl,
+            ForcePathStyle = true,      // Make bucket name part of the URL path instead of hostname, required for S3-compatible services like Cloudian.
         };
+        
+        // S3-Compatible APIs should not have a RegionEndpoint supplied to the client, otherwise
+        // the SDK will try to talk to S3 directly even if ServiceURL is explicitly set.
+        //
+        // To look up an S3 bucket location, if no region is specified provide us-east-1 as a default for the lookup
+        if (config.ServiceURL == null)
+        {
+            config.RegionEndpoint = region ?? RegionEndpoint.USEast1;
+            _logger.LogDebug($"S3 client configured to talk to Amazon S3 at region endpoint {config.RegionEndpoint.DisplayName}");
+        }
+        else
+        {
+            _logger.LogDebug($"S3 client configured to talk to S3-compatible API at service URL {config.ServiceURL}");
+        }
         
         if (_credentials != null)
         {
             _logger.LogDebug("Using basic AWS credentials for S3 client");
+            _logger.MethodExit();
             
             return new AmazonS3Client(_credentials, config);
         }
 
         _logger.LogDebug("Using default AWS credentials for S3 client");
         
+        _logger.MethodExit();
         return new AmazonS3Client(config);
     }
 
@@ -174,7 +221,7 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
         _logger.MethodEntry();
         var location = response.Location;
         
-        _logger.LogDebug($"Determining region based on response");
+        _logger.LogDebug($"Determining S3 bucket region based on response");
         
         // Per AWS spec: null means us-east-1
         if (location == null || string.IsNullOrEmpty(location.Value))
