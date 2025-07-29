@@ -66,17 +66,19 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             _logger.MethodEntry();
             _logger.LogInformation("Starting Re-Enrollment (ODKG) job");
             JobHistoryId = jobConfiguration.JobHistoryId;
+            
+            var configResult = ParseCertificateStoreConfiguration(_logger, jobConfiguration.CertificateStoreDetails);
+            if (!configResult.IsSuccessful)
+            {
+                return configResult.JobResult;
+            }
 
             var properties =
                 JsonConvert.DeserializeObject<ArubaCertificateStoreProperties>(jobConfiguration.CertificateStoreDetails
                     .Properties);
 
-            var host = jobConfiguration.CertificateStoreDetails.ClientMachine;
-            var servername = jobConfiguration.CertificateStoreDetails.StorePath;
-            var serviceName = properties.ServiceName;
-
             _logger.LogInformation(
-                $"Re-Enrollment job target: Host: {host}, Server Name: {servername}, Service Name: {serviceName}");
+                $"Re-Enrollment job target: Host: {ClientMachine}, Server Name: {ServerName}, Service Name: {ServiceName}");
             _logger.LogDebug(
                 $"Re-Enrollment job properties: {JsonConvert.SerializeObject(jobConfiguration.JobProperties)}");
 
@@ -158,7 +160,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             var certificate = certificateResult.Value;
 
             var certificateUrlResult =
-                UploadCertificateAndGetUrl(servername, serviceName, fileServerClient, certificate);
+                UploadCertificateAndGetUrl(ServerName, ServiceName, fileServerClient, certificate);
             if (!certificateUrlResult.IsSuccessful)
             {
                 return certificateUrlResult.JobResult;
@@ -167,7 +169,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             var certificateUrl = certificateUrlResult.Value;
 
             var uploadResult =
-                UpdateServerCertificate(servername, serverInfo!.ServerUuid, serviceName, certificateUrl!);
+                UpdateServerCertificate(ServerName, serverInfo!.ServerUuid, ServiceName, certificateUrl!);
             if (!uploadResult.IsSuccessful)
             {
                 return uploadResult.JobResult;

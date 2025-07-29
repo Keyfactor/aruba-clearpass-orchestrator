@@ -47,7 +47,30 @@ public class InventoryTests : BaseOrchestratorTest
     {
         var properties = new ArubaCertificateStoreProperties()
         {
-            ServiceName = "HTTPS(RSA)",
+        };
+        var config = new InventoryJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(properties),
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+        };
+        MockClusterServerReturns("SomethingElse", "abc123");
+        var response = _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
+
+        Assert.Equal(OrchestratorJobStatusJobResult.Failure, response.Result);
+        Assert.Equal("Unable to find store 'clearpass.localhost' in Aruba system", response.FailureMessage);
+    }
+    
+    [Fact]
+    public void ProcessJob_WhenStorePathDoesNotIncludeServiceName_ReturnsJobFailureStatus()
+    {
+        var properties = new ArubaCertificateStoreProperties()
+        {
         };
         var config = new InventoryJobConfiguration()
         {
@@ -60,11 +83,10 @@ public class InventoryTests : BaseOrchestratorTest
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
         };
-        MockClusterServerReturns("SomethingElse", "abc123");
         var response = _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
 
         Assert.Equal(OrchestratorJobStatusJobResult.Failure, response.Result);
-        Assert.Equal("Unable to find store 'clearpass.localhost' in Aruba system", response.FailureMessage);
+        Assert.Equal("Service name could not be parsed from store path 'clearpass.localhost'", response.FailureMessage);
     }
 
     [Fact]
@@ -72,7 +94,6 @@ public class InventoryTests : BaseOrchestratorTest
     {
         var properties = new ArubaCertificateStoreProperties()
         {
-            ServiceName = "HTTPS(RSA)",
         };
         var config = new InventoryJobConfiguration()
         {
@@ -80,7 +101,7 @@ public class InventoryTests : BaseOrchestratorTest
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(properties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -99,7 +120,6 @@ public class InventoryTests : BaseOrchestratorTest
     {
         var properties = new ArubaCertificateStoreProperties()
         {
-            ServiceName = "HTTPS(RSA)",
         };
         var config = new InventoryJobConfiguration()
         {
@@ -107,7 +127,7 @@ public class InventoryTests : BaseOrchestratorTest
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(properties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -125,7 +145,6 @@ public class InventoryTests : BaseOrchestratorTest
     {
         var properties = new ArubaCertificateStoreProperties()
         {
-            ServiceName = "HTTPS(RSA)",
         };
         var config = new InventoryJobConfiguration()
         {
@@ -133,7 +152,7 @@ public class InventoryTests : BaseOrchestratorTest
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(properties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",

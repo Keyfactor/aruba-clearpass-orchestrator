@@ -40,7 +40,6 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
 
     private readonly ArubaCertificateStoreProperties _testStoreProperties = new ()
     {
-        ServiceName = "HTTPS(RSA)",
         FileServerType = "Amazon S3",
         FileServerHost = "bogus.com",
         FileServerUsername = "hocus",
@@ -83,7 +82,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -101,7 +100,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
     }
     
     [Fact]
-    public void ProcessJob_JobPropertiesDoesNotContainKeyType_ReturnsJobFailureStatus()
+    public void ProcessJob_StorePathDoesNotIncludeServiceName_ReturnsJobFailureStatus()
     {
         var config = new ReenrollmentJobConfiguration()
         {
@@ -110,6 +109,31 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
                 StorePath = "clearpass.localhost",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+            JobProperties = new Dictionary<string, object>()
+            {
+                {"keyType", "RSA"},
+                {"keySize", 2048},
+            }
+        };
+        var response = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+    
+        Assert.Equal(OrchestratorJobStatusJobResult.Failure, response.Result);
+        Assert.Contains("Service name could not be parsed from store path 'clearpass.localhost'", response.FailureMessage);
+    }
+    
+    [Fact]
+    public void ProcessJob_JobPropertiesDoesNotContainKeyType_ReturnsJobFailureStatus()
+    {
+        var config = new ReenrollmentJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(_testStoreProperties),
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -135,7 +159,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -161,7 +185,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -183,7 +207,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -224,7 +248,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -249,7 +273,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -271,7 +295,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -294,7 +318,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -319,7 +343,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -346,7 +370,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -374,7 +398,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -398,7 +422,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -424,7 +448,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -450,7 +474,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -474,7 +498,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",
@@ -502,7 +526,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 ClientMachine = "example.com",
                 Properties = JsonConvert.SerializeObject(_testStoreProperties),
-                StorePath = "clearpass.localhost",
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",

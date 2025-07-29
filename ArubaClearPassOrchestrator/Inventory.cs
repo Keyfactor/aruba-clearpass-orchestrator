@@ -53,14 +53,17 @@ public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
             _logger.LogInformation("Starting inventory job");
             JobHistoryId = jobConfiguration.JobHistoryId;
 
+            var configResult = ParseCertificateStoreConfiguration(_logger, jobConfiguration.CertificateStoreDetails);
+            if (!configResult.IsSuccessful)
+            {
+                return configResult.JobResult;
+            }
+
             var properties =
                 JsonConvert.DeserializeObject<ArubaCertificateStoreProperties>(jobConfiguration.CertificateStoreDetails
                     .Properties);
-            var host = jobConfiguration.CertificateStoreDetails.ClientMachine;
-            var servername = jobConfiguration.CertificateStoreDetails.StorePath;
-            var serviceName = properties.ServiceName;
             
-            _logger.LogInformation($"Inventory job target: Host: {host}, Server Name: {servername}, Service Name: {serviceName}");
+            _logger.LogInformation($"Inventory job target: Host: {ClientMachine}, Server Name: {ServerName}, Service Name: {ServerName}");
 
             var clientResult = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
                 jobConfiguration.CertificateStoreDetails, properties);
@@ -78,11 +81,11 @@ public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
             }
             var serverInfo = serverInfoResult.Value;
 
-            var certificate = _arubaClient.GetServerCertificate(serverInfo.ServerUuid, serviceName).GetAwaiter().GetResult();
+            var certificate = _arubaClient.GetServerCertificate(serverInfo.ServerUuid, ServiceName).GetAwaiter().GetResult();
 
             var certificateEntry = new CurrentInventoryItem()
             {
-                Alias = $"{servername} {properties.ServiceName}",
+                Alias = $"{ServerName} {ServiceName}",
                 ItemStatus = OrchestratorInventoryItemStatus.Unknown,
                 PrivateKeyEntry = false,
                 Certificates = new[]

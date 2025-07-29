@@ -18,7 +18,6 @@ using ArubaClearPassOrchestrator.Exceptions;
 using ArubaClearPassOrchestrator.Models.Aruba.ClusterServer;
 using ArubaClearPassOrchestrator.Models.Keyfactor;
 using Keyfactor.Logging;
-using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -27,7 +26,42 @@ namespace Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
 
 public abstract class BaseOrchestratorJob
 {
+    protected string ClientMachine { get; set; }
+    protected string ServerName { get; set; }
+    protected string ServiceName { get; set; }
     protected long JobHistoryId { get; set; } = 0;
+
+    /// <summary>
+    /// Parses the CertificateStore setup and sets up the Client Machine, Server Name, and Service Name.
+    /// It validates the certificate store path is configured as expected, which should be a semicolon-delimited string
+    /// with the format `[server-name];[service-name]`
+    /// </summary>
+    /// <param name="certStore"></param>
+    /// <returns></returns>
+    protected JobOperation ParseCertificateStoreConfiguration(ILogger logger, CertificateStore certStore)
+    {
+        logger.MethodEntry();
+        
+        ClientMachine = certStore.ClientMachine;
+        
+        var storePath = certStore.StorePath;
+        
+        if (!storePath.Contains(';'))
+        {
+            logger.LogError($"Service name could not be parsed from store path '{storePath}'. Please consult the orchestrator documentation for store path setup details.");
+            logger.MethodExit();
+            
+            return JobOperation.Fail($"Service name could not be parsed from store path '{storePath}'");
+        }
+
+        var split = storePath.Split(';');
+
+        ServerName = split[0];
+        ServiceName = split[1];
+
+        logger.MethodExit();
+        return JobOperation.Success();
+    }
     
     /// <summary>
     /// If an IArubaClient instance is not provided by the constructor, then instantiate a new instance using

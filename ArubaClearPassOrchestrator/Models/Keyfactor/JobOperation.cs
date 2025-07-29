@@ -72,7 +72,7 @@ public class JobOperation
     public JobResult JobResult { get; init; }
     public bool IsSuccessful => JobResult?.Result == OrchestratorJobStatusJobResult.Success;
     
-    public static JobOperation Success(string message,  long? jobHistoryId = null)
+    public static JobOperation Success(string message = null,  long? jobHistoryId = null)
     {
         var jobResult = new JobResult
         {

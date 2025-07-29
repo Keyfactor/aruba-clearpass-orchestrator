@@ -4,6 +4,19 @@ The Aruba ClearPass Orchestrator Extension is an integration that can inventory 
 
 * Aruba
 
+## Store Path Configuration
+
+Aruba manages a single certificate per server + service. Both values are required to update a server certificate. The format of the store path should be `<server-name>;<service-name>`. For example, if you are updating the `clearpass.localhost` server certificate for service `HTTPS (RSA)`, the store path format will be `clearpass.localhost;HTTPS(RSA)`. 
+
+As of writing, acceptable values for `service-name` are as follows:
+
+- RADIUS
+- HTTPS(RSA)
+- HTTPS(ECC)
+- RadSec
+
+To build in flexibility for more Aruba-supported values, the orchestrator **will not perform** validation on the provided `service-name`, but you may run into issues if the service name does not exactly match the values above.
+
 ## File Server Configuration
 
 The Aruba ClearPass API requires an HTTP-accessible URL for certificates when performing a re-enrollment. The URL **must** be accessible by the Aruba ClearPass server. Currently, the `FileServerType` types accepted are:
