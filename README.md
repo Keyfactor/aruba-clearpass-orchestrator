@@ -151,7 +151,6 @@ the Keyfactor Command Portal
 
    | Name | Display Name | Description | Type | Default Value/Options | Required |
    | ---- | ------------ | ---- | --------------------- | -------- | ----------- |
-   | ServiceName | Service Name | The type of service associated with the server. Each service has its own certificate. | MultipleChoice | RADIUS,HTTPS(RSA),HTTPS(ECC),RadSec | ✅ Checked |
    | FileServerType | File Server Type | The type of file server that the certificate will be uploaded to. The file server must be able to serve the file via HTTPS. | MultipleChoice | Amazon S3 | ✅ Checked |
    | FileServerHost | File Server Host | Required. The base URL for the file server host without the scheme. (i.e. my-server-name.com if the file server URL is https://my-server-name.com). See File Server Configuration section in the orchestrator documentation for more details. | String |  | ✅ Checked |
    | FileServerUsername | File Server Username | Optional. The username used to access the file server. See File Server Configuration section in the orchestrator documentation for more details. | Secret |  | 🔲 Unchecked |
@@ -237,9 +236,8 @@ TODO Certificate Store Configuration is an optional section. If this section doe
    | Category | Select "Aruba" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
    | Client Machine | The base URL / IP address of the Aruba instance without the scheme. (i.e. my-server-name.com if the Aruba URL is https://my-server-name.com) |
-   | Store Path | The server hostname that holds the certificate. |
+   | Store Path | A semicolon-delimited string that in the format `<server-hostname>;<service>` (i.e. clearpass.localhost;HTTP(RSA)). Please see orchestrator documetnation for more information. |
    | Orchestrator | Select an approved orchestrator capable of managing `Aruba` certificates. Specifically, one with the `Aruba` capability. |
-   | ServiceName | The type of service associated with the server. Each service has its own certificate. |
    | FileServerType | The type of file server that the certificate will be uploaded to. The file server must be able to serve the file via HTTPS. |
    | FileServerHost | Required. The base URL for the file server host without the scheme. (i.e. my-server-name.com if the file server URL is https://my-server-name.com). See File Server Configuration section in the orchestrator documentation for more details. |
    | FileServerUsername | Optional. The username used to access the file server. See File Server Configuration section in the orchestrator documentation for more details. |
@@ -268,9 +266,8 @@ TODO Certificate Store Configuration is an optional section. If this section doe
    | Category | Select "Aruba" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
    | Client Machine | The base URL / IP address of the Aruba instance without the scheme. (i.e. my-server-name.com if the Aruba URL is https://my-server-name.com) |
-   | Store Path | The server hostname that holds the certificate. |
+   | Store Path | A semicolon-delimited string that in the format `<server-hostname>;<service>` (i.e. clearpass.localhost;HTTP(RSA)). Please see orchestrator documetnation for more information. |
    | Orchestrator | Select an approved orchestrator capable of managing `Aruba` certificates. Specifically, one with the `Aruba` capability. |
-   | Properties.ServiceName | The type of service associated with the server. Each service has its own certificate. |
    | Properties.FileServerType | The type of file server that the certificate will be uploaded to. The file server must be able to serve the file via HTTPS. |
    | Properties.FileServerHost | Required. The base URL for the file server host without the scheme. (i.e. my-server-name.com if the file server URL is https://my-server-name.com). See File Server Configuration section in the orchestrator documentation for more details. |
    | Properties.FileServerUsername | Optional. The username used to access the file server. See File Server Configuration section in the orchestrator documentation for more details. |
@@ -316,6 +313,19 @@ TODO Global Store Type Section is an optional section. If this section doesn't s
 TODO Discovery Job Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
 
 
+
+## Store Path Configuration
+
+Aruba manages a single certificate per server + service. Both values are required to update a server certificate. The format of the store path should be `<server-name>;<service-name>`. For example, if you are updating the `clearpass.localhost` server certificate for service `HTTPS (RSA)`, the store path format will be `clearpass.localhost;HTTPS(RSA)`. 
+
+As of writing, acceptable values for `service-name` are as follows:
+
+- RADIUS
+- HTTPS(RSA)
+- HTTPS(ECC)
+- RadSec
+
+To build in flexibility for more Aruba-supported values, the orchestrator **will not perform** validation on the provided `service-name`, but you may run into issues if the service name does not exactly match the values above.
 
 ## File Server Configuration
 
