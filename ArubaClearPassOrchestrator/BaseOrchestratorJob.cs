@@ -127,16 +127,14 @@ public abstract class BaseOrchestratorJob
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="arubaClient"></param>
-    /// <param name="jobConfiguration"></param>
-    /// <param name="certificateStore"></param>
+    /// <param name="storePath"></param>
     /// <returns>A JobOperation object wrapping around the ClusterServerItem and a JobResult</returns>
-    protected JobOperation<ClusterServerItem> GetArubaServerInfo(ILogger logger, IArubaClient arubaClient, JobConfiguration jobConfiguration, CertificateStore certificateStore)
+    protected JobOperation<ClusterServerItem> GetArubaServerInfo(ILogger logger, IArubaClient arubaClient, string storePath)
     {
         logger.MethodEntry();
         logger.LogDebug("Getting server information from Aruba");
         
         var servers = arubaClient.GetClusterServers().GetAwaiter().GetResult();
-        var storePath = certificateStore.StorePath;
 
         logger.LogDebug($"Number of servers found in Aruba: {servers.Count}");
         logger.LogDebug($"Server names found in Aruba: {string.Join(", ", servers.Select(p => $"'{p.Name}'"))}");

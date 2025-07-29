@@ -125,8 +125,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
             _arubaClient = clientResult.Value;
 
-            var serverInfoResult = GetArubaServerInfo(_logger, _arubaClient, jobConfiguration,
-                jobConfiguration.CertificateStoreDetails);
+            var serverInfoResult = GetArubaServerInfo(_logger, _arubaClient, ServerName);
             if (!serverInfoResult.IsSuccessful)
             {
                 return serverInfoResult.JobResult;
