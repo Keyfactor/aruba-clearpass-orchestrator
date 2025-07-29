@@ -58,8 +58,8 @@ To use the Aruba ClearPass Universal Orchestrator extension, you **must** create
 
 
 
-TODO Overview is a required section
-TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
 
 
 
@@ -67,7 +67,7 @@ TODO Global Store Type Section is an optional section. If this section doesn't s
 
 #### Aruba Requirements
 
-TODO Requirements is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
 
 
 
@@ -212,9 +212,9 @@ the Keyfactor Command Portal
 ## Defining Certificate Stores
 
 
-TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
 
-TODO Certificate Store Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
 
 
 ### Store Creation
@@ -307,10 +307,10 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
 ## Discovering Certificate Stores with the Discovery Job
 
 ### Aruba Discovery Job
-TODO Global Store Type Section is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
 
 
-TODO Discovery Job Configuration is an optional section. If this section doesn't seem necessary on initial glance, please delete it. Refer to the docs on [Confluence](https://keyfactor.atlassian.net/wiki/x/SAAyHg) for more info
+
+
 
 
 
