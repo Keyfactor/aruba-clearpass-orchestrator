@@ -378,6 +378,20 @@ Here is an example IAM policy with the minimum permissions necessary:
 }
 ```
 
+## Unit + Integration Tests
+
+This project features unit and integration tests that can be run from any IDE or command line.
+
+### Setting Up Integration Tests
+
+Inside the `ArubaClearPassOrchestrator.IntegrationTests` directory, there is a [.env.test.example](./ArubaClearPassOrchestrator.IntegrationTests/.env.test.example) file with the environment variables you can fill out. Each integration test has a flag that you can toggle to skip running that test. Copy the `.env.test.example` to `.env.test` within the same directory and fill out the environment variable values.
+
+### Running the Tests
+
+Here are some command line scripts to run the test suites:
+
+```bash
+
 
 ## License
 
