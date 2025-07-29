@@ -134,10 +134,27 @@ public class InventoryTests : BaseOrchestratorTest
         };
         MockClusterServerReturns("clearpass.localhost", "fizzbuzz");
         MockServerCertificateReturns(_mockCertificate);
+
+        var expected = new CurrentInventoryItem()
+        {
+            Alias = "clearpass.localhost HTTPS(RSA)",
+            ItemStatus = OrchestratorInventoryItemStatus.Unknown,
+            PrivateKeyEntry = false,
+            Certificates = new[] { _mockCertificate }
+        };
         
         _sut.ProcessJob(config, _submitInventoryUpdateMock.Object);
 
         _submitInventoryUpdateMock.Verify(p => p.Invoke(It.IsAny<IEnumerable<CurrentInventoryItem>>()), Times.Once);
+        var invocation = (List<CurrentInventoryItem>) _submitInventoryUpdateMock.Invocations[0].Arguments[0];
+        Assert.Single(invocation);
+            
+        var submittedInventory = invocation.Single();
+        
+        Assert.Equal(expected.Alias, submittedInventory.Alias);
+        Assert.Equal(expected.ItemStatus, submittedInventory.ItemStatus);
+        Assert.Equal(expected.PrivateKeyEntry, submittedInventory.PrivateKeyEntry);
+        Assert.Equal(expected.Certificates, submittedInventory.Certificates);
     }
 
     [Fact]
