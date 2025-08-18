@@ -393,6 +393,14 @@ Some integration tests may suited towards running against a service hosted in a 
 Here are some command line scripts to run the test suites:
 
 ```bash
+dotnet restore
+
+dotnet test
+
+dotnet test --filter "Category!=Integration"
+
+dotnet test --filter "Category=Integration"
+```
 
 ## Stub
 
