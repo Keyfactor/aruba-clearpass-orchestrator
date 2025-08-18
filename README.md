@@ -392,7 +392,11 @@ Some integration tests may suited towards running against a service hosted in a 
 
 Here are some command line scripts to run the test suites:
 
-```
+```bash
+
+## Stub
+
+This is an example section. Please do not remove or modify.
 
 
 ## License
