@@ -83,16 +83,12 @@ Some integration tests may suited towards running against a service hosted in a 
 Here are some command line scripts to run the test suites:
 
 ```bash
-# restore project dependencies (optional)
 dotnet restore
 
-# run integration and unit tests
 dotnet test
 
-# run just the unit tests
 dotnet test --filter "Category!=Integration"
 
-# run just the integration tests
 dotnet test --filter "Category=Integration"
 ```
 
