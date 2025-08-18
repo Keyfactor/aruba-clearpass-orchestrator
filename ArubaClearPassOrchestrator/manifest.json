@@ -1,0 +1,14 @@
+{
+	"extensions": {
+		"Keyfactor.Orchestrators.Extensions.IOrchestratorJobExtension": {
+			"CertStores.Aruba.Inventory": {
+				"assemblypath": "ArubaClearPassOrchestrator.dll",
+				"TypeFullName": "Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Inventory"
+			},
+			"CertStores.Aruba.Reenrollment": {
+				"assemblypath": "ArubaClearPassOrchestrator.dll",
+				"TypeFullName": "Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Reenrollment"
+			}
+		}
+	}
+}
