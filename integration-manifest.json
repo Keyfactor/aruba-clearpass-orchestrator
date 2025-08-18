@@ -36,7 +36,7 @@
           "StorePathValue": "",
           "PrivateKeyAllowed": "Forbidden",
           "ClientMachineDescription": "The base URL / IP address of the Aruba instance without the scheme. (i.e. my-server-name.com if the Aruba URL is https://my-server-name.com)",
-          "StorePathDescription": "A semicolon-delimited string that in the format `<server-hostname>;<service>` (i.e. clearpass.localhost;HTTP(RSA)). Please see orchestrator documetnation for more information.",
+          "StorePathDescription": "A semicolon-delimited string that in the format `<server-hostname>;<service>` (i.e. clearpass.localhost;HTTP(RSA)). Please see orchestrator documentation for more information.",
           "JobProperties": [],
           "ServerRequired": true,
           "PowerShell": false,

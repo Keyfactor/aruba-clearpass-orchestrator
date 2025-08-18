@@ -22,7 +22,7 @@ namespace ArubaClearPassOrchestrator.IntegrationTests.Clients.FileServerClients;
 /// <summary>
 /// Tests the integration with S3-compatible services such as Cloudian, MinIO, etc.
 /// For a local example with MinIO, you can configure with Docker Compose.
-/// Run from the project root: docker-compose -f local/docker-compose.minio.yml up --build
+/// Run from the project root: docker-compose -f local/docker-compose.s3-compatible.yml up --build
 /// Use these environment variables in your env file:
 /// - S3_COMPATIBLE_BUCKET_NAME = http://localhost:9000;my-bucket
 /// - S3_COMPATIBLE_ACCESS_KEY = minioadmin

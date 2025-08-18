@@ -39,10 +39,10 @@ These are the File Server configurations on the Certificate Store setup:
     - If targeting an S3-compatible service (i.e. Cloudian Hyperstore, MinIO, etc.), the host will be in the format `<service-url>;<bucket-name>`. For example, `https://s3-us-west1.cloudian.example.com:443;your-bucket-name`.
 - File Server Username
     - Optional. If you wish to use IAM user credentials, this will be the **Access Key** for the IAM user credentials.
-    - If not provided, the orchestrator can resolve credentials. See the AWS [Credential and profile resolution](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/creds-assign.html) for more information.
+    - If not provided, the orchestrator can attempt to resolve credentials. See the AWS [Credential and profile resolution](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/creds-assign.html) for more information.
 - File Server Password
     - Optional. If you wish to use IAM user credentials, this will be the **Secret Access Key** for the IAM user credentials.
-    - If not provided, the orchestrator can resolve credentials. See the AWS [Credential and profile resolution](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/creds-assign.html) for more information.
+    - If not provided, the orchestrator can attempt to resolve credentials. See the AWS [Credential and profile resolution](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/creds-assign.html) for more information.
 
 
 #### Example AWS IAM Policy
@@ -76,11 +76,13 @@ This project features unit and integration tests that can be run from any IDE or
 
 Inside the `ArubaClearPassOrchestrator.IntegrationTests` directory, there is a [.env.test.example](./ArubaClearPassOrchestrator.IntegrationTests/.env.test.example) file with the environment variables you can fill out. Each integration test has a flag that you can toggle to skip running that test. Copy the `.env.test.example` to `.env.test` within the same directory and fill out the environment variable values.
 
+Some integration tests may suited towards running against a service hosted in a Docker container. The [local](./local) directory will contain Docker Compose files relevant to an associated integration test (for example, `S3CompatibleFileServerClientTests`).
+
 ### Running the Tests
 
 Here are some command line scripts to run the test suites:
 
-```bash
+```
 # restore project dependencies (optional)
 dotnet restore
 
@@ -93,4 +95,3 @@ dotnet test --filter "Category!=Integration"
 # run just the integration tests
 dotnet test --filter "Category=Integration"
 ```
-
