@@ -80,18 +80,24 @@ Some integration tests may suited towards running against a service hosted in a 
 
 ### Running the Tests
 
-Here are some command line scripts to run the test suites:
+Here are some command line scripts to run the test suites.
 
+Restore project depedencies (optional):
 ```bash
 dotnet restore
-
-dotnet test
-
-dotnet test --filter "Category!=Integration"
-
-dotnet test --filter "Category=Integration"
 ```
 
-## Stub
+Run integration and unit tests:
+```bash
+dotnet test
+```
 
-This is an example section. Please do not remove or modify.
+Run just the unit tests:
+```bash
+dotnet test --filter "Category!=Integration"
+```
+
+Run just the integration tests:
+```bash
+dotnet test --filter "Category=Integration"
+```
