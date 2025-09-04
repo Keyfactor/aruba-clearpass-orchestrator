@@ -306,6 +306,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             _logger.LogDebug($"Uploading certificate to file server under key {key}");
             certificateUrl = fileServerClient.UploadCertificate(key, certificate).GetAwaiter().GetResult();
             _logger.LogInformation($"Successfully uploaded certificate to file server under key {key}");
+            _logger.LogDebug($"Certificate URL: {certificateUrl}");
         }
         catch (Exception ex)
         {
@@ -339,7 +340,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         try
         {
             _logger.LogDebug($"Updating certificate in Aruba for server {servername} and service {service}");
-            _arubaClient!.UpdateServerCertificate(serverUuid, service, certificateUrl);
+            _arubaClient!.UpdateServerCertificate(serverUuid, service, certificateUrl).GetAwaiter().GetResult();
             _logger.LogInformation(
                 $"Successfully updated certificate in Aruba for server {servername} and service {service}");
         }

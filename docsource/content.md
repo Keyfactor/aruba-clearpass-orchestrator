@@ -4,6 +4,29 @@ The Aruba ClearPass Orchestrator Extension is an integration that can inventory 
 
 * Aruba
 
+## Prerequisites
+The following setup is required for this integration:
+- An Aruba API client with appropriate operator profile permissions (see [Aruba API Client Setup](#aruba-api-client-setup))
+- A file server that can serve uploaded certificates via HTTPS (see [File Server Configuration](#file-server-configuration) for a list of supported file server types)
+
+### Aruba API Client Setup
+> Please refer to the [Aruba Networks documentation](https://developer.arubanetworks.com/cppm/docs/api-authorization-oauth2) for the official API client setup guide.
+
+- If you do not already have an API client available, here are the steps to create an API client. Within Aruba ClearPass Guest, go to Administration > API Services > API Clients and select `Create API client`.
+- For Operating Mode, choose `ClearPass REST API`
+- For Operator Profile, choose the profile you wish to use with the API client. Make sure the Operator Profile meets the [minimum required permissions](#operator-profile-permissions-requirements)
+- For the Grant Type, choose `Client credentials`
+- Make sure the client is Enabled
+
+Copy the client secret in a secure location. The client ID and client secret will be used in your certificate store configuration.
+
+#### Operator Profile Permissions Requirements
+
+The following permissions are required on your API client's operator profile:
+- API Services > Allow API Access > Allow Access
+- Platform > Import Configuration > Read Only
+- Policy Manager > Certificates > Read, Write
+
 ## Store Path Configuration
 
 Aruba manages a single certificate per server + service. Both values are required to update a server certificate. The format of the store path should be `<server-name>;<service-name>`. For example, if you are updating the `clearpass.localhost` server certificate for service `HTTPS (RSA)`, the store path format will be `clearpass.localhost;HTTPS(RSA)`. 
@@ -68,36 +91,6 @@ Here is an example IAM policy with the minimum permissions necessary:
 }
 ```
 
-## Unit + Integration Tests
+# Contributing
 
-This project features unit and integration tests that can be run from any IDE or command line.
-
-### Setting Up Integration Tests
-
-Inside the `ArubaClearPassOrchestrator.IntegrationTests` directory, there is a [.env.test.example](./ArubaClearPassOrchestrator.IntegrationTests/.env.test.example) file with the environment variables you can fill out. Each integration test has a flag that you can toggle to skip running that test. Copy the `.env.test.example` to `.env.test` within the same directory and fill out the environment variable values.
-
-Some integration tests may suited towards running against a service hosted in a Docker container. The [local](./local) directory will contain Docker Compose files relevant to an associated integration test (for example, `S3CompatibleFileServerClientTests`).
-
-### Running the Tests
-
-Here are some command line scripts to run the test suites.
-
-Restore project depedencies (optional):
-```bash
-dotnet restore
-```
-
-Run integration and unit tests:
-```bash
-dotnet test
-```
-
-Run just the unit tests:
-```bash
-dotnet test --filter "Category!=Integration"
-```
-
-Run just the integration tests:
-```bash
-dotnet test --filter "Category=Integration"
-```
+This project welcomes any contributions. Please see the [CONTRIBUTING](./CONTRIBUTING.md) document for a development guide.

@@ -235,6 +235,7 @@ public class ArubaClient : IArubaClient
         ReadHttpResponseContent(response, out var errorMessage);
         
         _logger.LogError($"The Aruba API request did not succeed. Status code: {response.StatusCode}. Reason: {response.ReasonPhrase}. Error: {errorMessage}");
+        _logger.LogError($"API URL that failed: {response.RequestMessage?.Method.Method} {response.RequestMessage?.RequestUri}");
         throw new HttpRequestException($"The Aruba API request did not succeed. Status code: {response.StatusCode}. Reason: {response.ReasonPhrase}. Error: {errorMessage}");
     }
     
