@@ -91,6 +91,6 @@ Here is an example IAM policy with the minimum permissions necessary:
 }
 ```
 
-# Contributing
+## Contributing
 
 This project welcomes any contributions. Please see the [CONTRIBUTING](./CONTRIBUTING.md) document for a development guide.

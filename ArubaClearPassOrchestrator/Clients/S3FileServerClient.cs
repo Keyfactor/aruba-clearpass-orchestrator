@@ -18,6 +18,7 @@ using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Amazon.S3.Transfer;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
@@ -74,10 +75,10 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
     /// <summary>
     /// Uploads the certificate contents to S3 and returns a pre-signed URL to the certificate.
     /// </summary>
-    /// <param name="key">The path to store the certificate</param>
+    /// <param name="fileName">The path to store the certificate</param>
     /// <param name="certificate">The certificate to store into S3</param>
     /// <returns>A pre-signed URL to access the certificate.</returns>
-    public async Task<string> UploadCertificate(string key, X509Certificate2 certificate)
+    public async Task<string> UploadCertificate(string fileName, X509Certificate2 certificate)
     {
         string certificateUrl = null;
         try
@@ -95,15 +96,19 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
             string pem = ConvertToPem(certificate);
             byte[] data = Encoding.UTF8.GetBytes(pem);
 
+            var key = $"{fileName}.pem";
+
             _logger.LogDebug($"Uploading the certificate to S3. Bucket name: {_bucketName}, Key: {key}");
 
-            await client.PutObjectAsync(new PutObjectRequest()
+            var request = new PutObjectRequest
             {
                 BucketName = _bucketName,
                 Key = key,
                 ContentType = "application/x-pem-file",
-                InputStream = new MemoryStream(data)
-            });
+                InputStream = new MemoryStream(data),
+            };
+
+            await client.PutObjectAsync(request);
 
             _logger.LogInformation(
                 $"Successfully uploaded the certificate to S3. Bucket name: {_bucketName}, Key: {key}");
@@ -119,7 +124,8 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
                 Expires = expiryDate,
                 Verb = HttpVerb.GET,
             });
-
+            
+            _logger.LogDebug($"Certificate pre-signed URL: {certificateUrl}");
             _logger.LogInformation($"Pre-signed URL for certificate created. Expiration (UTC): {expiryDate:o}");
         }
         catch (Exception ex)

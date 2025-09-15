@@ -409,7 +409,11 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         
         _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
         
-        _fileServerClientMock.Verify(p => p.UploadCertificate("clearpass.localhost_HTTPS(RSA).pfx", It.IsAny<X509Certificate2>()), Times.Once);
+        _fileServerClientMock.Verify(
+            p => p.UploadCertificate(
+                It.Is<string>(str => str.StartsWith("clearpass.localhost_HTTPS(RSA)")), 
+                It.IsAny<X509Certificate2>())
+            , Times.Once);
     }
     
     [Fact]

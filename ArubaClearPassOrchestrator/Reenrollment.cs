@@ -41,6 +41,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     private readonly ILogger _logger;
     private readonly IFileServerClientFactory _fileServerClientFactory;
     private readonly IPAMSecretResolver _resolver;
+    
+    private const int SECURE_PASSWORD_LENGTH = 32;
 
     public Reenrollment(IPAMSecretResolver resolver)
     {
@@ -259,7 +261,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
         try
         {
-            var password = GenerateSecurePassword(16);
+            var password = GenerateSecurePassword(SECURE_PASSWORD_LENGTH);
             _logger.LogDebug(
                 $"Creating CSR request in Aruba for subject CN {subjectInformation.CommonName} with encryption algorithm {encryptionAlgorithm} and {digestAlgorithm}");
             var response = _arubaClient
@@ -302,10 +304,11 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         string certificateUrl = null;
         try
         {
-            var key = $"{servername}_{service}.pfx";
-            _logger.LogDebug($"Uploading certificate to file server under key {key}");
-            certificateUrl = fileServerClient.UploadCertificate(key, certificate).GetAwaiter().GetResult();
-            _logger.LogInformation($"Successfully uploaded certificate to file server under key {key}");
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            var fileName = $"{servername}_{service}_{timestamp}";
+            _logger.LogDebug($"Uploading certificate to file server under filename {fileName}");
+            certificateUrl = fileServerClient.UploadCertificate(fileName, certificate).GetAwaiter().GetResult();
+            _logger.LogInformation($"Successfully uploaded certificate to file server under key {fileName}");
             _logger.LogDebug($"Certificate URL: {certificateUrl}");
         }
         catch (Exception ex)
