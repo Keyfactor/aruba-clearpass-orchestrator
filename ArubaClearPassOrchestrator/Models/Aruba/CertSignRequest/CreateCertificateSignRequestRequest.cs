@@ -36,6 +36,9 @@ public class CreateCertificateSignRequestRequest
     [JsonProperty("subject_C")]
     public string SubjectC { get; set; }
     
+    [JsonProperty("subject_SAN")]
+    public string SubjectSAN { get; set; }
+    
     [JsonProperty("private_key_password")]
     public string PrivateKeyPassword { get; set; }
     

@@ -25,6 +25,7 @@ public class CertificateSubjectInformationTests
         var result = CertificateSubjectInformation.ParseFromSubjectText(subjectText);
         
         Assert.Equal("commonname", result.CommonName);
+        Assert.Equal("commonname", result.AllFields["CN"]);
     }
     
     [Fact]
@@ -34,6 +35,7 @@ public class CertificateSubjectInformationTests
         var result = CertificateSubjectInformation.ParseFromSubjectText(subjectText);
         
         Assert.Equal("test@example.com", result.Email);
+        Assert.Equal("test@example.com", result.AllFields["E"]);
     }
     
     [Fact]
@@ -43,6 +45,17 @@ public class CertificateSubjectInformationTests
         var result = CertificateSubjectInformation.ParseFromSubjectText(subjectText);
         
         Assert.Equal("organization", result.Organization);
+        Assert.Equal("organization", result.AllFields["O"]);
+    }
+    
+    [Fact]
+    public void ParseFromSubjectText_WhenOrganizationIncludesComma_ParsesOrganization()
+    {
+        var subjectText = "CN=commonname,E=test@example.com,O=Org, Inc.,OU=ou,L=city,ST=state,C=CR";
+        var result = CertificateSubjectInformation.ParseFromSubjectText(subjectText);
+        
+        Assert.Equal("Org, Inc.", result.Organization);
+        Assert.Equal("Org, Inc.", result.AllFields["O"]);
     }
     
     [Fact]
@@ -52,6 +65,7 @@ public class CertificateSubjectInformationTests
         var result = CertificateSubjectInformation.ParseFromSubjectText(subjectText);
         
         Assert.Equal("ou", result.OrganizationalUnit);
+        Assert.Equal("ou", result.AllFields["OU"]);
     }
     
     [Fact]
@@ -61,6 +75,7 @@ public class CertificateSubjectInformationTests
         var result = CertificateSubjectInformation.ParseFromSubjectText(subjectText);
         
         Assert.Equal("city", result.CityLocality);
+        Assert.Equal("city", result.AllFields["L"]);
     }
     
     [Fact]
@@ -70,6 +85,7 @@ public class CertificateSubjectInformationTests
         var result = CertificateSubjectInformation.ParseFromSubjectText(subjectText);
         
         Assert.Equal("CR", result.CountryRegion);
+        Assert.Equal("CR", result.AllFields["C"]);
     }
     
     [Fact]
@@ -79,5 +95,15 @@ public class CertificateSubjectInformationTests
         var result = CertificateSubjectInformation.ParseFromSubjectText(subjectText);
         
         Assert.Null(result.Email);
+        Assert.Equal(false, result.AllFields.ContainsKey("E"));
+    }
+    
+    [Fact]
+    public void ParseFromSubjectText_WhenSubjectFieldIsNotRecognized_AddsKeyValueToFieldsProperty()
+    {
+        var subjectText = "CN=commonname,O=organization,OU=ou,L=city,ST=state,C=CR,SERIAL=abcd";
+        var result = CertificateSubjectInformation.ParseFromSubjectText(subjectText);
+        
+        Assert.Equal("abcd", result.AllFields["SERIAL"]);
     }
 }

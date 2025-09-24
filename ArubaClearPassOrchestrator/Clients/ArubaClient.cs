@@ -119,7 +119,7 @@ public class ArubaClient : IArubaClient
         var url = $"/api/cert-sign-request";
         _logger.LogDebug($"Creating a certificate signing request to {_baseUrl}{url}");
         
-        var request = new CreateCertificateSignRequestRequest()
+        var request = new CreateCertificateSignRequestRequest
         {
             SubjectCN = subjectInformation.CommonName,
             SubjectO = subjectInformation.Organization,
@@ -127,6 +127,7 @@ public class ArubaClient : IArubaClient
             SubjectC = subjectInformation.CountryRegion,
             SubjectL = subjectInformation.CityLocality,
             SubjectST = subjectInformation.StateProvince,
+            SubjectSAN = "",
             PrivateKeyPassword = privateKeyPassword,
             PrivateKeyType = privateKeyType,
             DigestAlgorithm = digestAlgorithm

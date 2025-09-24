@@ -95,6 +95,8 @@ public class S3FileServerClient : BaseFileServerClient, IFileServerClient
             // _logger.LogDebug($"Raw Data: {certificate.RawData}, GetRawCertData: {certificate.GetRawCertData()}, GetRawCertDataString: {certificate.GetRawCertDataString()}");
             string pem = ConvertToPem(certificate);
             byte[] data = Encoding.UTF8.GetBytes(pem);
+            
+            _logger.LogTrace($"PEM contents: {pem}");
 
             var key = $"{fileName}.pem";
 

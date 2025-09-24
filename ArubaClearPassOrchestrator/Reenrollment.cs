@@ -83,6 +83,16 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 $"Re-Enrollment job target: Host: {ClientMachine}, Server Name: {ServerName}, Service Name: {ServiceName}");
             _logger.LogDebug(
                 $"Re-Enrollment job properties: {JsonConvert.SerializeObject(jobConfiguration.JobProperties)}");
+            //
+            // if (jobConfiguration.SANs == null)
+            // {
+            //     _logger.LogDebug("No SANs were provided to the Re-Enrollment job");
+            // }
+            // else
+            // {
+            //     _logger.LogDebug("SAN fields received:");
+            //     _logger.LogDebug(JsonConvert.SerializeObject(jobConfiguration.SANs));
+            // }
 
             var jobPropertiesResult = ParseJobPropertyFields(jobConfiguration.JobProperties);
             if (!jobPropertiesResult.IsSuccessful)
@@ -272,6 +282,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
             ParseAndLogCsrMetadata(certificateSignRequest);
             _logger.LogDebug($"CSR request completed successfully.");
+            _logger.LogTrace($"CSR content: {certificateSignRequest}");
 
             return JobOperation<string>.Success(certificateSignRequest);
         }
@@ -389,6 +400,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             }
 
             _logger.LogDebug($"CSR Enrollment completed successfully");
+            
             return JobOperation<X509Certificate2>.Success(certificate);
         }
         catch (Exception ex)
