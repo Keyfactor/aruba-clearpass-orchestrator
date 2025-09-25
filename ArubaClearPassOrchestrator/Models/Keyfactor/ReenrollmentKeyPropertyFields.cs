@@ -21,4 +21,6 @@ public class ReenrollmentKeyPropertyFields
     public string KeyType { get; set; }
     
     public string KeySize { get; set; }
+    
+    public string? SANs { get; set; }
 }

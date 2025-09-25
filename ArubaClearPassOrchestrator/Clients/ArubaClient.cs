@@ -110,6 +110,7 @@ public class ArubaClient : IArubaClient
     }
 
     public async Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(CertificateSubjectInformation subjectInformation,
+        string sans,
         string privateKeyPassword,
         string privateKeyType,
         string digestAlgorithm)
@@ -127,7 +128,7 @@ public class ArubaClient : IArubaClient
             SubjectC = subjectInformation.CountryRegion,
             SubjectL = subjectInformation.CityLocality,
             SubjectST = subjectInformation.StateProvince,
-            SubjectSAN = "",
+            SubjectSAN = sans,
             PrivateKeyPassword = privateKeyPassword,
             PrivateKeyType = privateKeyType,
             DigestAlgorithm = digestAlgorithm

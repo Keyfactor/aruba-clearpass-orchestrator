@@ -40,12 +40,13 @@ public interface IArubaClient
     /// </summary>
     /// <param name="subjectInformation">The subject details to include in the CSR, such as Common Name (CN), Organization (O), Country (C), etc. 
     /// These values are encoded into the Distinguished Name (DN) of the CSR.</param>
+    /// <param name="sans">A string of SAN values (i.e. dns=example.com&ip=10.0.0.1)</param>
     /// <param name="privateKeyPassword">A password used to encrypt the generated private key stored in Aruba ClearPass. 
     /// This password is not included in the response and must be securely stored by the caller.</param>
     /// <param name="privateKeyType">The type of private key to generate for the CSR. This determines the key algorithm used in the request. Example values are "2048-bit rsa" and "nist/secg curve over a 256 bit prime field". Please consult the Aruba ClearPass API for possible values. https://developer.arubanetworks.com/cppm/reference/certsignrequestpost</param>
     /// <param name="digestAlgorithm">The hash algorithm used to sign the CSR. This determines the digest method applied during CSR creation. Example values include "SHA-1" or "SHA-512". Please consult the Aruba ClearPass API for possible values. https://developer.arubanetworks.com/cppm/reference/certsignrequestpost</param>
     /// <returns>A CreateCertificateSignRequestResponse object</returns>
-    public Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(CertificateSubjectInformation subjectInformation, string privateKeyPassword, string privateKeyType, string digestAlgorithm);
+    public Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(CertificateSubjectInformation subjectInformation, string sans, string privateKeyPassword, string privateKeyType, string digestAlgorithm);
     
     /// <summary>
     /// Updates a server certificate in Aruba ClearPass for the provided server UUID and service name (i.e. HTTPS(RSA), HTTPS(ECC), etc.)

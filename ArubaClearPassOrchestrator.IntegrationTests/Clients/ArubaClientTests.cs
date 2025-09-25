@@ -69,7 +69,7 @@ public class ArubaClientTests : BaseIntegrationTest
             CountryRegion = "US",
             Email = "test@example.com"
         };
-        var result = await _sut.CreateCertificateSignRequest(subjectInformation, "F0oB4rB@z!", "2048-bit rsa", "SHA-512");
+        var result = await _sut.CreateCertificateSignRequest(subjectInformation, null, "F0oB4rB@z!", "2048-bit rsa", "SHA-512");
         Assert.NotNull(result);
         Assert.NotEmpty(result.CertificateSignRequest);
     }

@@ -26,7 +26,23 @@
             "Enrollment": true,
             "Remove": false
           },
-          "EntryParameters": [],
+          "EntryParameters": [
+            {
+              "Name": "SAN",
+              "DisplayName": "SAN",
+              "Type": "String",
+              "RequiredWhen": {
+                "HasPrivateKey": false,
+                "OnAdd": false,
+                "OnRemove": false,
+                "OnReenrollment": true
+              },
+              "DependsOn": "",
+              "DefaultValue": "",
+              "Options": "",
+              "Description": "String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>:<san_value> entries separated by ampersands; Example: 'DNS:www.example.com&DNS:www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA. Allowed SAN types are email, URI, DNS, RID or IP."
+            }
+          ],
           "PasswordOptions": {
             "EntrySupported": false,
             "StoreRequired": false,
