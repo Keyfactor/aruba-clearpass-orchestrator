@@ -161,6 +161,16 @@ the Keyfactor Command Portal
 
    ![Aruba Custom Fields Tab](docsource/images/Aruba-custom-fields-store-type-dialog.png)
 
+   ##### Entry Parameters Tab
+
+   | Name | Display Name | Description | Type | Default Value | Entry has a private key | Adding an entry | Removing an entry | Reenrolling an entry |
+   | ---- | ------------ | ---- | ------------- | ----------------------- | ---------------- | ----------------- | ------------------- | ----------- |
+   | SAN | SAN | String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>:<san_value> entries separated by ampersands; Example: 'DNS:www.example.com&DNS:www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA. Allowed SAN types are email, URI, DNS, RID or IP. | String |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | ✅ Checked |
+
+   The Entry Parameters tab should look like this:
+
+   ![Aruba Entry Parameters Tab](docsource/images/Aruba-entry-parameters-store-type-dialog.png)
+
    </details>
 
 ## Installation
