@@ -43,6 +43,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     private readonly IPAMSecretResolver _resolver;
 
     private const int SECURE_PASSWORD_LENGTH = 32;
+    private const char SANS_DELIMITER = ',';
 
     public Reenrollment(IPAMSecretResolver resolver)
     {
@@ -643,7 +644,11 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
         
         var result = jobProperties.SANs;
         
-        _logger.LogDebug($"No SANs found in job config. Using SANs in job properties: {result}");
+        _logger.LogDebug($"No SANs found in job config. SANs value in job properties: {result}");
+
+        result = result?.Replace('&', SANS_DELIMITER);
+        
+        _logger.LogDebug($"Using SANs value: {result}");
         
         _logger.MethodExit();
         
@@ -684,10 +689,10 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
             if (email != null)
             {
-                sansList.AddRange(email.Select(p => $"email={p}"));
+                sansList.AddRange(email?.Select(p => $"email={p}"));
             }
 
-            var result = string.Join("&", sansList);
+            var result = string.Join(SANS_DELIMITER, sansList);
 
             _logger.LogDebug($"Resulting SANs string from job configuration: {result}");
 

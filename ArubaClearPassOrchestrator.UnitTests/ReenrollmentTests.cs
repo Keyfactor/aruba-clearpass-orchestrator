@@ -574,7 +574,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
     {
         var properties = _testJobProperties;
         properties.Remove("SAN");
-        properties.Add("SAN", "DNS=www.example.com&IP=0.0.0.0&email=test@example.com");
+        properties.Add("SAN", "DNS=www.example.com,IP=0.0.0.0,email=test@example.com");
         
         var config = new ReenrollmentJobConfiguration()
         {
@@ -598,10 +598,46 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         ArubaClientMock.Verify(p => 
             p.CreateCertificateSignRequest(
                 It.IsAny<CertificateSubjectInformation>(),
-                "DNS=www.example.com&IP=0.0.0.0&email=test@example.com",
+                "DNS=www.example.com,IP=0.0.0.0,email=test@example.com",
                 It.IsAny<string>(), 
                 It.IsAny<string>(), 
                 It.IsAny<string>())
+            , Times.Once);
+    }
+    
+    [Fact]
+    public void ProcessJob_WhenSANsAreProvidedInJobPropertiesWithAmpersandDelimiter_SendsSANsToArubaAsCommaDelimited()
+    {
+        var properties = _testJobProperties;
+        properties.Remove("SAN");
+        properties.Add("SAN", "DNS=www.example.com&IP=0.0.0.0&email=test@example.com");
+        
+        var config = new ReenrollmentJobConfiguration()
+        {
+            CertificateStoreDetails = new CertificateStore()
+            {
+                ClientMachine = "example.com",
+                Properties = JsonConvert.SerializeObject(_testStoreProperties),
+                StorePath = "clearpass.localhost;HTTPS(RSA)",
+            },
+            ServerPassword = "ServerPassword",
+            ServerUsername = "ServerUsername",
+            JobProperties = properties,
+            JobHistoryId = 123
+        };
+        MockClusterServerReturns("clearpass.localhost", "fizzbuzz");
+        MockCertificateSignRequestReturns(_mockCsr);
+        MockUploadCertificateReturns("https://access-your-file-here/mycert.crt");
+        
+        _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+        
+        ArubaClientMock.Verify(p => 
+                p.CreateCertificateSignRequest(
+                    It.IsAny<CertificateSubjectInformation>(),
+                    "DNS=www.example.com,IP=0.0.0.0,email=test@example.com",
+                    It.IsAny<string>(), 
+                    It.IsAny<string>(), 
+                    It.IsAny<string>())
             , Times.Once);
     }
     
@@ -638,7 +674,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         ArubaClientMock.Verify(p => 
                 p.CreateCertificateSignRequest(
                     It.IsAny<CertificateSubjectInformation>(),
-                    "DNS=www.example.com&DNS=example.com&email=test@example.com",
+                    "DNS=www.example.com,DNS=example.com,email=test@example.com",
                     It.IsAny<string>(), 
                     It.IsAny<string>(), 
                     It.IsAny<string>())
@@ -679,7 +715,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         ArubaClientMock.Verify(p => 
                 p.CreateCertificateSignRequest(
                     It.IsAny<CertificateSubjectInformation>(),
-                    "DNS=www.example.com&DNS=example.com&IP=0.0.0.0&IP=fe80::202:b3ff:fe1e:8329&email=test@example.com&email=admin@example.com",
+                    "DNS=www.example.com,DNS=example.com,IP=0.0.0.0,IP=fe80::202:b3ff:fe1e:8329,email=test@example.com,email=admin@example.com",
                     It.IsAny<string>(), 
                     It.IsAny<string>(), 
                     It.IsAny<string>())

@@ -13,7 +13,6 @@
 // limitations under the License.
 
 using ArubaClearPassOrchestrator.Models.Keyfactor;
-using Org.BouncyCastle.Asn1.X509;
 
 namespace ArubaClearPassOrchestrator.UnitTests.Models;
 
@@ -24,8 +23,6 @@ public class CertificateSubjectInformationTests
     {
         var subjectText = "CN=commonname,E=test@example.com,O=organization,OU=ou,L=city,ST=state,C=CR";
         var result = CertificateSubjectInformation.ParseFromSubjectText(subjectText);
-
-        var result2 = new X509Name(subjectText);
         
         Assert.Equal("commonname", result.CommonName);
     }
