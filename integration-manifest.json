@@ -1,44 +1,48 @@
 {
   "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
+  "integration_type": "orchestrator",
+  "name": "Aruba ClearPass",
+  "status": "prototype",
+  "update_catalog": true,
+  "link_github": true,
+  "support_level": "kf-supported",
+  "release_project": "ArubaClearPassOrchestrator/ArubaClearPassOrchestrator.csproj",
+  "release_dir": "ArubaClearPassOrchestrator/bin/Release",
+  "description": "The Aruba ClearPass Orchestrator allows for the remote management of certificates in Aruba ClearPass Policy Manager. Inventory and Re-Enrollment (On Device Key Generation) functions are supported.",
   "about": {
     "orchestrator": {
       "UOFramework": "10.1",
-      "keyfactor_platform_version": "9.10",
-      "pam_support": false,
+      "keyfactor_platform_version": "10.4",
       "store_types": [
         {
-          "Name": "MyOrchestratorStoreType",
-          "ShortName": "MOST",
-          "Capability": "MOST",
+          "Name": "Aruba",
+          "ShortName": "Aruba",
+          "Capability": "Aruba",
           "LocalStore": false,
           "SupportedOperations": {
             "Add": false,
             "Create": false,
             "Discovery": false,
-            "Enrollment": false,
+            "Enrollment": true,
             "Remove": false
           },
-          "Properties": [
+          "EntryParameters": [
             {
-              "Name": "CustomField1",
-              "DisplayName": "CustomField1",
-              "Description": "CustomField1 Description",
+              "Name": "SAN",
+              "DisplayName": "SAN",
               "Type": "String",
-              "DependsOn": "",
-              "DefaultValue": "default",
-              "Required": true
-            },
-            {
-              "Name": "CustomField2",
-              "DisplayName": "CustomField2",
-              "Description": "CustomField2 Description",
-              "Type": "String",
+              "RequiredWhen": {
+                "HasPrivateKey": false,
+                "OnAdd": false,
+                "OnRemove": false,
+                "OnReenrollment": true
+              },
               "DependsOn": "",
               "DefaultValue": "",
-              "Required": true
+              "Options": "",
+              "Description": "String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>:<san_value> entries separated by ampersands; Example: 'DNS:www.example.com&DNS:www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA. Allowed SAN types are email, URI, DNS, RID or IP."
             }
           ],
-          "EntryParameters": [],
           "PasswordOptions": {
             "EntrySupported": false,
             "StoreRequired": false,
@@ -46,23 +50,63 @@
           },
           "StorePathType": "",
           "StorePathValue": "",
-          "StorePathDescription": "",
           "PrivateKeyAllowed": "Forbidden",
+          "ClientMachineDescription": "The base URL / IP address of the Aruba instance without the scheme. (i.e. my-server-name.com if the Aruba URL is https://my-server-name.com)",
+          "StorePathDescription": "A semicolon-delimited string that in the format `<server-hostname>;<service>` (i.e. clearpass.localhost;HTTP(RSA)). Please see orchestrator documentation for more information.",
           "JobProperties": [],
           "ServerRequired": true,
           "PowerShell": false,
           "BlueprintAllowed": false,
-          "CustomAliasAllowed": "Forbidden"
+          "CustomAliasAllowed": "Forbidden",
+          "Properties": [
+            {
+              "Name": "FileServerType",
+              "DisplayName": "File Server Type",
+              "Type": "MultipleChoice",
+              "DependsOn": "",
+              "DefaultValue": "Amazon S3",
+              "Required": true,
+              "Description": "The type of file server that the certificate will be uploaded to. The file server must be able to serve the file via HTTPS."
+            },
+            {
+              "Name": "FileServerHost",
+              "DisplayName": "File Server Host",
+              "Type": "String",
+              "DependsOn": "",
+              "DefaultValue": "",
+              "Required": true,
+              "Description": "Required. The base URL for the file server host without the scheme. (i.e. my-server-name.com if the file server URL is https://my-server-name.com). See File Server Configuration section in the orchestrator documentation for more details."
+            },
+            {
+              "Name": "FileServerUsername",
+              "DisplayName": "File Server Username",
+              "Type": "Secret",
+              "DependsOn": "",
+              "DefaultValue": "",
+              "Required": false,
+              "Description": "Optional. The username used to access the file server. See File Server Configuration section in the orchestrator documentation for more details."
+            },
+            {
+              "Name": "FileServerPassword",
+              "DisplayName": "File Server Password",
+              "Type": "Secret",
+              "DependsOn": "",
+              "DefaultValue": "",
+              "Required": false,
+              "Description": "Optional. The password used to access the file server. See File Server Configuration section in the orchestrator documentation for more details."
+            },
+            {
+              "Name": "DigestAlgorithm",
+              "DisplayName": "Digest Algorithm",
+              "Type": "MultipleChoice",
+              "DependsOn": "",
+              "DefaultValue": "SHA-256,SHA-1,SHA-224,SHA-384,SHA-512",
+              "Required": true,
+              "Description": "The hash digest algorithm used for the certificate signing request (CSR)."
+            }
+          ]
         }
       ]
     }
-  },
-  "description": "This project is meant to be a template to quickly build a basic integration product build. Currently in dev, a work in progress,",
-  "integration_type": "orchestrator",
-  "link_github": false,
-  "name": "Integration Template",
-  "release_dir": "UPDATE-THIS-WITH-PATH-TO-BINARY-BUILD-FOLDER",
-  "status": "prototype",
-  "support_level": "community",
-  "update_catalog": false
+  }
 }
