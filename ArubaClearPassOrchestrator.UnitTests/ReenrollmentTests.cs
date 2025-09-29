@@ -659,6 +659,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
             {
                 { "dnsname", new []{ "www.example.com", "example.com" }},
                 { "rfc822name", new []{ "test@example.com" }},
+                { "upn", new []{ "John Doe" }}, // Should not be mapped to SAN string sent to Aruba
             },
             ServerPassword = "ServerPassword",
             ServerUsername = "ServerUsername",

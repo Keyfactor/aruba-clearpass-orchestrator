@@ -13,21 +13,18 @@
 // limitations under the License.
 
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using ArubaClearPassOrchestrator.Clients;
 using ArubaClearPassOrchestrator.Clients.Interfaces;
 using ArubaClearPassOrchestrator.Models.Keyfactor;
+using Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Generators;
+using Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Logging;
+using Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator.Mappers;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.OpenSsl;
-using Org.BouncyCastle.Pkcs;
-using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
 using Exception = System.Exception;
 
 namespace Keyfactor.Extensions.Orchestrator.ArubaClearPassOrchestrator;
@@ -42,8 +39,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     private readonly IFileServerClientFactory _fileServerClientFactory;
     private readonly IPAMSecretResolver _resolver;
 
-    private const int SECURE_PASSWORD_LENGTH = 32;
-    private const char SANS_DELIMITER = ',';
+    private const int SecurePasswordLength = 32;
 
     public Reenrollment(IPAMSecretResolver resolver)
     {
@@ -84,18 +80,8 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 $"Re-Enrollment job target: Host: {ClientMachine}, Server Name: {ServerName}, Service Name: {ServiceName}");
             _logger.LogDebug(
                 $"Re-Enrollment job properties: {JsonConvert.SerializeObject(jobConfiguration.JobProperties)}");
-            //
-            // if (jobConfiguration.SANs == null)
-            // {
-            //     _logger.LogDebug("No SANs were provided to the Re-Enrollment job");
-            // }
-            // else
-            // {
-            //     _logger.LogDebug("SAN fields received:");
-            //     _logger.LogDebug(JsonConvert.SerializeObject(jobConfiguration.SANs));
-            // }
 
-            var jobPropertiesResult = ParseJobPropertyFields(jobConfiguration.JobProperties);
+            var jobPropertiesResult = ReenrollmentKeyPropertyFieldsMapper.MapKeyPropertyFields(_logger, jobConfiguration.JobProperties, JobHistoryId);
             if (!jobPropertiesResult.IsSuccessful)
             {
                 return jobPropertiesResult.JobResult;
@@ -117,7 +103,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             }
 
             var encryptionAlgorithmResult =
-                MapKeySizeAndTypeToArubaEncryptionAlgorithm(jobProperties.KeyType, jobProperties.KeySize);
+                ArubaEncryptionAlgorithmMapper.MapEncryptionAlgorithm(_logger, jobProperties.KeyType, jobProperties.KeySize, JobHistoryId);
 
             if (!encryptionAlgorithmResult.IsSuccessful)
             {
@@ -154,7 +140,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
             var fileServerClient = fileServerClientResult.Value;
 
-            var sans = GetSansFromConfigOrProperties(jobConfiguration, jobProperties);
+            var sans = ArubaSansMapper.MapSANs(_logger, jobConfiguration, jobProperties);
 
             var csrResult =
                 GetCertificateSigningRequest(subjectInformation, sans, encryptionAlgorithm, digestAlgorithm);
@@ -275,7 +261,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
         try
         {
-            var password = GenerateSecurePassword(SECURE_PASSWORD_LENGTH);
+            var password = PasswordGenerator.Generate(_logger, SecurePasswordLength);
             _logger.LogDebug(
                 $"Creating CSR request in Aruba for subject CN {subjectInformation.CommonName} with encryption algorithm {encryptionAlgorithm} and {digestAlgorithm}");
             var response = _arubaClient
@@ -284,7 +270,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 .GetResult();
             var certificateSignRequest = response.CertificateSignRequest;
 
-            ParseAndLogCsrMetadata(certificateSignRequest);
+            CertificateSigningRequestLogger.ParseCsrMetadata(_logger, certificateSignRequest);
             _logger.LogDebug($"CSR request completed successfully.");
             _logger.LogTrace($"CSR content: {certificateSignRequest}");
 
@@ -415,295 +401,6 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             return JobOperation<X509Certificate2>.Fail(
                 $"An error occurred while submitting re-enrollment update: {ex.Message}. Check the Keyfactor Command logs for more information.",
                 JobHistoryId);
-        }
-        finally
-        {
-            _logger.MethodExit();
-        }
-    }
-
-    /// <summary>
-    /// Parses the job properties dictionary and converts into a model. If required fields are missing, will report a job failure
-    /// with list of missing properties.
-    /// </summary>
-    /// <param name="properties"></param>
-    /// <returns></returns>
-    private JobOperation<ReenrollmentKeyPropertyFields> ParseJobPropertyFields(Dictionary<string, object> properties)
-    {
-        _logger.MethodEntry();
-        var errors = new StringBuilder();
-
-        _logger.LogTrace("Parsing subjectText from job properties");
-        if (!properties.TryGetValue("subjectText", out var subjectText))
-        {
-            errors.AppendLine("SubjectText was not found in job properties. ");
-        }
-
-        _logger.LogTrace("Parsing keyType from job properties");
-        if (!properties.TryGetValue("keyType", out var keyType))
-        {
-            errors.AppendLine("KeyType was not found in job properties. ");
-        }
-
-        _logger.LogTrace("Parsing keySize from job properties");
-        if (!properties.TryGetValue("keySize", out var keySize))
-        {
-            errors.AppendLine("KeySize was not found in job properties. ");
-        }
-
-        string sans = null;
-        _logger.LogTrace("Parsing SANs from job properties");
-        if (!properties.TryGetValue("SAN", out var sansValue))
-        {
-            _logger.LogDebug("SANs not found in job properties");
-        }
-        else
-        {
-            _logger.LogDebug($"Parsed SANs from job properties: {sansValue}");
-            sans = sansValue.ToString();
-        }
-
-        if (errors.Length > 0)
-        {
-            _logger.MethodExit();
-            return JobOperation<ReenrollmentKeyPropertyFields>.Fail(errors.ToString(), JobHistoryId);
-        }
-
-        var result = new ReenrollmentKeyPropertyFields()
-        {
-            SubjectText = $"{subjectText}",
-            KeySize = $"{keySize}",
-            KeyType = $"{keyType}",
-            SANs = sans,
-        };
-
-        _logger.MethodExit();
-        return JobOperation<ReenrollmentKeyPropertyFields>.Success(result);
-    }
-
-    /// <summary>
-    /// Maps the key type and key size from the JobProperties to an Aruba-accepted encryption algorithm.
-    /// Acceptable encryption algorithms can be found in the Aruba API documentation: https://developer.arubanetworks.com/cppm/reference/certsignrequestpost
-    /// </summary>
-    /// <param name="keyType"></param>
-    /// <param name="keySize"></param>
-    /// <returns></returns>
-    private JobOperation<string> MapKeySizeAndTypeToArubaEncryptionAlgorithm(string keyType, string keySize)
-    {
-        _logger.MethodEntry();
-
-        var rsa2048 = "2048-bit rsa";
-        var rsa3072 = "3072-bit rsa";
-        var rsa4096 = "4096-bit rsa";
-        var ecc256 = "nist/secg curve over a 256 bit prime field";
-        var ecc384 = "nist/secg curve over a 384 bit prime field";
-        var ecc521 = "nist/secg curve over a 521 bit prime field";
-
-        var acceptedArubaValues = new[] { rsa2048, rsa3072, rsa4096, ecc256, ecc384, ecc521 };
-        string encryptionAlgorithm = null;
-
-        switch (keyType)
-        {
-            case "RSA":
-                switch (keySize)
-                {
-                    case "2048":
-                        encryptionAlgorithm = rsa2048;
-                        break;
-                    case "3072":
-                        encryptionAlgorithm = rsa3072;
-                        break;
-                    case "4096":
-                        encryptionAlgorithm = rsa4096;
-                        break;
-                }
-
-                break;
-
-            case "ECC":
-                switch (keySize)
-                {
-                    case "P-256":
-                    case "prime256v1":
-                    case "secp256r1":
-                    case "P-256/prime256v1/secp256r1":
-                        encryptionAlgorithm = ecc256;
-                        break;
-
-                    case "P-384":
-                    case "secp384r1":
-                    case "P-384/secp384r1":
-                        encryptionAlgorithm = ecc384;
-                        break;
-
-                    case "P-521":
-                    case "secp521r1":
-                    case "P-521/secp521r1":
-                        encryptionAlgorithm = ecc521;
-                        break;
-                }
-
-                break;
-        }
-
-        _logger.MethodExit();
-
-        // If no match found, return failure
-        if (encryptionAlgorithm == null)
-        {
-            return JobOperation<string>.Fail(
-                $"Unable to map key type '{keyType}' and key size '{keySize}' to an accepted Aruba mapping. Aruba allows the following algorithms: {string.Join(", ", acceptedArubaValues)}",
-                JobHistoryId);
-        }
-
-        return JobOperation<string>.Success(encryptionAlgorithm);
-    }
-
-    /// <summary>
-    /// To troubleshoot failures sending CSR to Command, this utility function will help log the CSR metadata
-    /// </summary>
-    /// <param name="csrPem"></param>
-    private void ParseAndLogCsrMetadata(string csrPem)
-    {
-        _logger.MethodEntry();
-        // Read CSR
-        Pkcs10CertificationRequest csr;
-        using (var reader = new StringReader(csrPem))
-        {
-            var pemReader = new PemReader(reader);
-            csr = (Pkcs10CertificationRequest)pemReader.ReadObject();
-        }
-
-        _logger.LogDebug("===== Parsed CSR Information =====");
-
-        // Subject
-        var subject = csr.GetCertificationRequestInfo().Subject;
-        _logger.LogDebug($"Subject: {subject}");
-
-        // Public Key
-        AsymmetricKeyParameter publicKey = csr.GetPublicKey();
-        var pubKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(publicKey);
-        var alg = pubKeyInfo.AlgorithmID.Algorithm.Id;
-
-        _logger.LogDebug($"Public Key Algorithm: {alg}");
-        if (publicKey is Org.BouncyCastle.Crypto.Parameters.RsaKeyParameters rsa)
-        {
-            _logger.LogDebug($"RSA Key Size: {rsa.Modulus.BitLength} bits");
-        }
-
-        // Signature algorithm
-        var sigAlg = csr.SignatureAlgorithm.Algorithm.Id;
-        _logger.LogDebug($"Signature Algorithm: {sigAlg}");
-
-        _logger.LogDebug("==================================");
-        _logger.MethodExit();
-    }
-
-    /// <summary>
-    /// Generates a secure password of the specified length using a cryptographically secure random number generator.
-    /// </summary>
-    /// <param name="length">The length of the password to generate.</param>
-    /// <returns>A securely generated password of specified length.</returns>
-    private string GenerateSecurePassword(int length)
-    {
-        _logger.MethodEntry();
-        _logger.LogDebug($"Generating a secure password with {length} characters");
-        const string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_";
-        var random = new SecureRandom();
-        var password = new StringBuilder();
-
-        for (int i = 0; i < length; i++)
-        {
-            int index = random.Next(allowedChars.Length);
-            password.Append(allowedChars[index]);
-        }
-
-        _logger.MethodExit();
-        return password.ToString();
-    }
-
-    private string GetSansFromConfigOrProperties(ReenrollmentJobConfiguration jobConfig,
-        ReenrollmentKeyPropertyFields jobProperties)
-    {
-        _logger.MethodEntry();
-        
-        try
-        {
-            var jobConfigSans = GetSansFromJobConfig(jobConfig);
-            if (!string.IsNullOrEmpty(jobConfigSans))
-            {
-                _logger.LogDebug($"Using SANs from job config: {jobConfigSans}");
-                _logger.MethodExit();
-                return jobConfigSans;
-            }
-        }
-        catch (Exception)
-        {
-            
-        } 
-        
-        var result = jobProperties.SANs;
-        
-        _logger.LogDebug($"No SANs found in job config. SANs value in job properties: {result}");
-
-        result = result?.Replace('&', SANS_DELIMITER);
-        
-        _logger.LogDebug($"Using SANs value: {result}");
-        
-        _logger.MethodExit();
-        
-        return result;
-    }
-
-    private string GetSansFromJobConfig(ReenrollmentJobConfiguration jobConfig)
-    {
-        _logger.MethodEntry();
-
-        try
-        {
-            var sansDictionary = jobConfig.SANs;
-
-            if (sansDictionary is null || sansDictionary.Count == 0)
-            {
-                _logger.LogDebug($"No SANs found in job config.");
-                return null;
-            }
-
-            var sansList = new List<string>();
-
-            sansDictionary.TryGetValue("dnsname", out var dnsNames);
-            sansDictionary.TryGetValue("ipaddress", out var ipAddress);
-            sansDictionary.TryGetValue("rfc822name", out var email);
-
-            _logger.LogDebug($"Pulled SANs from job configuration: {JsonConvert.SerializeObject(sansDictionary)}");
-
-            if (dnsNames != null)
-            {
-                sansList.AddRange(dnsNames.Select(p => $"DNS={p}"));
-            }
-
-            if (ipAddress != null)
-            {
-                sansList.AddRange(ipAddress.Select(p => $"IP={p}"));
-            }
-
-            if (email != null)
-            {
-                sansList.AddRange(email?.Select(p => $"email={p}"));
-            }
-
-            var result = string.Join(SANS_DELIMITER, sansList);
-
-            _logger.LogDebug($"Resulting SANs string from job configuration: {result}");
-
-
-            return result;
-        }
-        catch (Exception)
-        {
-            // Older versions of Command / UO might throw an exception if SANs are retrieved from job configuration
-            _logger.LogDebug($"SANs could not be parsed from job config.");
-            return null;
         }
         finally
         {
