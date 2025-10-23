@@ -367,7 +367,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
     public void ProcessJob_WhenSANsAreProvidedInJobProperties_SendsSANsToAruba()
     {
         var config = new ReenrollmentJobConfigurationBuilder()
-            .WithJobProperty("SAN", "DNS=www.example.com,IP=0.0.0.0,email=test@example.com")
+            .WithJobProperty("SAN", "DNS:www.example.com,IP:0.0.0.0,email:test@example.com")
             .Build();
         
         SetupSuccessfulMocks();
@@ -377,7 +377,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         ArubaClientMock.Verify(p => 
             p.CreateCertificateSignRequest(
                 It.IsAny<CertificateSubjectInformation>(),
-                "DNS=www.example.com,IP=0.0.0.0,email=test@example.com",
+                "DNS:www.example.com,IP:0.0.0.0,email:test@example.com",
                 It.IsAny<string>(), 
                 It.IsAny<string>(), 
                 It.IsAny<string>())
@@ -385,10 +385,10 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
     }
     
     [Fact]
-    public void ProcessJob_WhenSANsAreProvidedInJobPropertiesWithAmpersandDelimiter_SendsSANsToArubaAsCommaDelimited()
+    public void ProcessJob_WhenSANsAreProvidedInJobPropertiesWithEqualKeyDelimiter_SendsSANsToArubaAsIs()
     {
         var config = new ReenrollmentJobConfigurationBuilder()
-            .WithJobProperty("SAN",  "DNS=www.example.com&IP=0.0.0.0&email=test@example.com")
+            .WithJobProperty("SAN",  "DNS=www.example.com,IP=0.0.0.0,email=test@example.com")
             .Build();
         
         SetupSuccessfulMocks();
@@ -398,7 +398,28 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         ArubaClientMock.Verify(p => 
                 p.CreateCertificateSignRequest(
                     It.IsAny<CertificateSubjectInformation>(),
-                    "DNS=www.example.com,IP=0.0.0.0,email=test@example.com",
+                    "DNS:www.example.com,IP:0.0.0.0,email:test@example.com",
+                    It.IsAny<string>(), 
+                    It.IsAny<string>(), 
+                    It.IsAny<string>())
+            , Times.Once);
+    }
+    
+    [Fact]
+    public void ProcessJob_WhenSANsAreProvidedInJobPropertiesWithAmpersandDelimiter_SendsSANsToArubaAsCommaDelimited()
+    {
+        var config = new ReenrollmentJobConfigurationBuilder()
+            .WithJobProperty("SAN",  "DNS:www.example.com&IP:0.0.0.0&email:test@example.com")
+            .Build();
+        
+        SetupSuccessfulMocks();
+        
+        _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
+        
+        ArubaClientMock.Verify(p => 
+                p.CreateCertificateSignRequest(
+                    It.IsAny<CertificateSubjectInformation>(),
+                    "DNS:www.example.com,IP:0.0.0.0,email:test@example.com",
                     It.IsAny<string>(), 
                     It.IsAny<string>(), 
                     It.IsAny<string>())
@@ -412,6 +433,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         {
             { "dnsname", new[] { "www.example.com", "example.com" } },
             { "rfc822name", new[] { "test@example.com" } },
+            { "ipaddress", new[] { "127.0.0.1", "FE80::0202:B3FF:FE1E:8329", "FE80:0000:0000:0000:0202:B3FF:FE1E:8329" } },
             { "upn", new[] { "John Doe" } }, // Should not be mapped to SAN string sent to Aruba
         };
         
@@ -427,7 +449,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         ArubaClientMock.Verify(p => 
                 p.CreateCertificateSignRequest(
                     It.IsAny<CertificateSubjectInformation>(),
-                    "DNS=www.example.com,DNS=example.com,email=test@example.com",
+                    "DNS:www.example.com,DNS:example.com,IP:127.0.0.1,IP:FE80::0202:B3FF:FE1E:8329,IP:FE80:0000:0000:0000:0202:B3FF:FE1E:8329,email:test@example.com",
                     It.IsAny<string>(), 
                     It.IsAny<string>(), 
                     It.IsAny<string>())
@@ -456,7 +478,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         ArubaClientMock.Verify(p => 
                 p.CreateCertificateSignRequest(
                     It.IsAny<CertificateSubjectInformation>(),
-                    "DNS=www.example.com,DNS=example.com,IP=0.0.0.0,IP=fe80::202:b3ff:fe1e:8329,email=test@example.com,email=admin@example.com",
+                    "DNS:www.example.com,DNS:example.com,IP:0.0.0.0,IP:fe80::202:b3ff:fe1e:8329,email:test@example.com,email:admin@example.com",
                     It.IsAny<string>(), 
                     It.IsAny<string>(), 
                     It.IsAny<string>())

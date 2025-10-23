@@ -57,7 +57,10 @@ public static class ArubaSansMapper
         logger.LogDebug($"No SANs found in job config. SANs value in job properties: {result}");
 
         // If SAN string is received with an '&', convert it to ',' which is the accepted delimiter for Aruba
-        result = result?.Replace('&', ArubaClearPassConstants.Delimiters.Sans);
+        // If SAN string is received with "=" for key-value pair, map it to ":" which is the accepted KV delimiter for Aruba
+        result = result?
+            .Replace('&', ArubaClearPassConstants.Delimiters.Sans)
+            .Replace("=", ":");
         
         logger.LogDebug($"Using SANs value: {result}");
         
@@ -96,17 +99,17 @@ public static class ArubaSansMapper
 
             if (dnsNames != null)
             {
-                sansList.AddRange(dnsNames.Select(p => $"{ArubaClearPassConstants.SanPrefixes.Dns}={p}"));
+                sansList.AddRange(dnsNames.Select(p => $"{ArubaClearPassConstants.SanPrefixes.Dns}:{p}"));
             }
 
             if (ipAddress != null)
             {
-                sansList.AddRange(ipAddress.Select(p => $"{ArubaClearPassConstants.SanPrefixes.IpAddress}={p}"));
+                sansList.AddRange(ipAddress.Select(p => $"{ArubaClearPassConstants.SanPrefixes.IpAddress}:{p}"));
             }
 
             if (email != null)
             {
-                sansList.AddRange(email?.Select(p => $"{ArubaClearPassConstants.SanPrefixes.Email}={p}"));
+                sansList.AddRange(email.Select(p => $"{ArubaClearPassConstants.SanPrefixes.Email}:{p}"));
             }
 
             if (userPrincipalName != null)
