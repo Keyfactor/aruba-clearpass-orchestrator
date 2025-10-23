@@ -165,7 +165,7 @@ the Keyfactor Command Portal
 
    | Name | Display Name | Description | Type | Default Value | Entry has a private key | Adding an entry | Removing an entry | Reenrolling an entry |
    | ---- | ------------ | ---- | ------------- | ----------------------- | ---------------- | ----------------- | ------------------- | ----------- |
-   | SAN | SAN | String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>:<san_value> entries separated by ampersands; Example: 'DNS:www.example.com&DNS:www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA. Allowed SAN types are email, URI, DNS, RID or IP. | String |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | ✅ Checked |
+   | SAN | SAN | String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>:<san_value> entries separated by comma; Example: 'DNS:www.example.com,DNS:www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA. Allowed SAN types are email, URI, DNS, RID or IP. | String |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | ✅ Checked |
 
    The Entry Parameters tab should look like this:
 
@@ -410,6 +410,27 @@ Here is an example IAM policy with the minimum permissions necessary:
   ]
 }
 ```
+
+## Troubleshooting
+
+### Re-Enrollment / ODKG
+
+#### Command returned a null certificate from the CSR
+The error message "Command returned a null certificate from the CSR. Did the subject information included in the CSR match the subject information on the ODKG request" may result if Command rejects the CSR it receives from Aruba.
+
+If this error occurs, check the Command API logs and the Workflow Instance logs for error details.
+
+There are a few reasons for this issue to occur:
+
+##### CSR is Missing Expected Subject
+This issue may occur is if the CSR Aruba generates does not contain all the subject information included in the original re-enrollment request. 
+
+As of writing, the Aruba API ***does not*** support email as a subject field for CSR generation. If a re-enrollment request is processed that includes email in the certificate subject, Command may reject the CSR because it does not include email in its subject. To resolve this issue, try excluding the email from the subject (you may include it as a SAN parameter).
+
+##### Missing Required Metadata
+This issue may occur if the targeted certificate template does not include the required metadata defined on the certificate template.
+
+For newer versions of Command, required certificate metadata is prompted for when performing a re-enrollment / ODKG. For older versions of Command, the required certificate metadata fields may not be prompted on re-enrollment. As a workaround, if you are running on older versions of Command this issue can be mitigated by updating the metadata as either not required or providing a default value for these fields.
 
 ## Contributing
 
