@@ -38,6 +38,11 @@ public class ReenrollmentJobConfigurationBuilder
         return this;
     }
 
+    public ReenrollmentJobConfigurationBuilder WithSubjectText(string subjectText)
+    {
+        return WithJobProperty("subjectText", subjectText);
+    }
+
     public ReenrollmentJobConfigurationBuilder WithJobProperties(Dictionary<string, object> properties)
     {
         _jobProperties = properties;

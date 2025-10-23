@@ -151,7 +151,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
 
             var csr = csrResult.Value;
 
-            var certificateResult = SubmitReenrollmentUpdate(submitReenrollmentUpdate, csr);
+            var certificateResult = SubmitReenrollmentUpdate(submitReenrollmentUpdate, csr, jobProperties.SubjectText);
             if (!certificateResult.IsSuccessful)
             {
                 return certificateResult.JobResult;
@@ -369,9 +369,10 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
     /// </summary>
     /// <param name="submitReenrollmentUpdate"></param>
     /// <param name="csr"></param>
+    /// <param name="subjectText"></param>
     /// <returns></returns>
     private JobOperation<X509Certificate2> SubmitReenrollmentUpdate(SubmitReenrollmentCSR submitReenrollmentUpdate,
-        string csr)
+        string csr, string subjectText)
     {
         _logger.MethodEntry();
 
@@ -385,7 +386,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
                 _logger.LogError($"Command returned a null certificate from the CSR.");
 
                 return JobOperation<X509Certificate2>.Fail(
-                    $"Command returned a null certificate from the CSR. Did the subject information included in the CSR match the subject information on the ODKG request? Check the Keyfactor Command logs for error information.",
+                    $"Command returned a null certificate from the CSR. Did the subject information included in the CSR match the subject information on the ODKG request? Subject text: \"{subjectText}\". Including email in subject may cause issues. Check the Keyfactor Command logs or workflow instance logs for error information.",
                     JobHistoryId);
             }
 

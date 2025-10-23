@@ -212,6 +212,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
     public void ProcessJob_WhenSubmitReenrollmentReturnsNull_ReturnsJobFailure()
     {
         var config = new ReenrollmentJobConfigurationBuilder()
+            .WithSubjectText("CN=example.com,E=admin@example.com")
             .Build();
         
         SetupSuccessfulMocks();
@@ -221,7 +222,7 @@ public class ReenrollmentTests : BaseOrchestratorTest, IClassFixture<SharedTestC
         var result = _sut.ProcessJob(config, _submitReenrollmentCSRMock.Object);
         
         Assert.Equal(OrchestratorJobStatusJobResult.Failure, result.Result);
-        Assert.Equal("Command returned a null certificate from the CSR. Did the subject information included in the CSR match the subject information on the ODKG request? Check the Keyfactor Command logs for error information.", result.FailureMessage);
+        Assert.Equal("Command returned a null certificate from the CSR. Did the subject information included in the CSR match the subject information on the ODKG request? Subject text: \"CN=example.com,E=admin@example.com\". Including email in subject may cause issues. Check the Keyfactor Command logs or workflow instance logs for error information.", result.FailureMessage);
     }
     
     [Fact]
