@@ -174,7 +174,7 @@ the Keyfactor Command Portal
 
    ##### SAN
 
-   ![Aruba Entry Parameter - SAN ](docsource/images/Aruba-entry-parameters-store-type-dialog-SAN.png)
+   ![Aruba Entry Parameter - SAN](docsource/images/Aruba-entry-parameters-store-type-dialog-SAN.png)
 
 
 
