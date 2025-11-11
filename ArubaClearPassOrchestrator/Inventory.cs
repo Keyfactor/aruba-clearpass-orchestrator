@@ -63,7 +63,7 @@ public class Inventory : BaseOrchestratorJob, IInventoryJobExtension
                 JsonConvert.DeserializeObject<ArubaCertificateStoreProperties>(jobConfiguration.CertificateStoreDetails
                     .Properties);
             
-            _logger.LogInformation($"Inventory job target: Host: {ClientMachine}, Server Name: {ServerName}, Service Name: {ServerName}");
+            _logger.LogInformation($"Inventory job target: Host: {ClientMachine}, Server Name: {ServerName}, Service Name: {ServiceName}");
 
             var clientResult = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
                 jobConfiguration.CertificateStoreDetails, properties);

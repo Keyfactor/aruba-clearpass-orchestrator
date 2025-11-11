@@ -113,7 +113,7 @@ public class Reenrollment : BaseOrchestratorJob, IReenrollmentJobExtension
             var encryptionAlgorithm = encryptionAlgorithmResult.Value;
             var digestAlgorithm = properties.DigestAlgorithm;
 
-            _logger.LogInformation($"Encryption alogrithm: {encryptionAlgorithm}, Digest Algorithm {digestAlgorithm}");
+            _logger.LogInformation($"Encryption algorithm: {encryptionAlgorithm}, Digest Algorithm {digestAlgorithm}");
 
             var clientResult = GetArubaClient(_logger, _resolver, _arubaClient, jobConfiguration,
                 jobConfiguration.CertificateStoreDetails, properties);

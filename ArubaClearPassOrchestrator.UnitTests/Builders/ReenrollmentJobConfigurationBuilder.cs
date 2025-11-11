@@ -6,12 +6,12 @@ namespace ArubaClearPassOrchestrator.UnitTests.Builders;
 
 public class ReenrollmentJobConfigurationBuilder
 {
-    private string _clientMachine = "example.com";
+    private readonly string _clientMachine = "example.com";
     private string _storePath = "clearpass.localhost;HTTPS(RSA)";
-    private ArubaCertificateStoreProperties _properties;
+    private readonly ArubaCertificateStoreProperties _properties;
     private Dictionary<string, object> _jobProperties;
     private Dictionary<string, string[]> _sans;
-    private long _jobHistoryId = 123;
+    private readonly long _jobHistoryId = 123;
 
     public ReenrollmentJobConfigurationBuilder()
     {

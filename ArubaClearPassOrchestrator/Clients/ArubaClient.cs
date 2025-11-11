@@ -109,7 +109,8 @@ public class ArubaClient : IArubaClient
         return result;
     }
 
-    public async Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(CertificateSubjectInformation subjectInformation,
+    public async Task<CreateCertificateSignRequestResponse> CreateCertificateSignRequest(
+        CertificateSubjectInformation subjectInformation,
         string sans,
         string privateKeyPassword,
         string privateKeyType,
@@ -119,7 +120,7 @@ public class ArubaClient : IArubaClient
 
         var url = $"/api/cert-sign-request";
         _logger.LogDebug($"Creating a certificate signing request to {_baseUrl}{url}");
-        
+
         var request = new CreateCertificateSignRequestRequest
         {
             SubjectCN = subjectInformation.CommonName,
@@ -134,18 +135,18 @@ public class ArubaClient : IArubaClient
             DigestAlgorithm = digestAlgorithm
         };
 
-        var response = await _httpClient.PostAsync(url,
-            new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json"));
+        using var content = GetStringContent(request);
+        var response = await _httpClient.PostAsync(url, content);
         _logger.LogDebug(
             $"Certificate signing request complete. Status code: {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
-
+        
         EnsureRequestSucceeded(response);
-
+        
         _logger.LogDebug($"Certificate signing request completed successfully.");
-
+        
         ReadHttpResponseContent(response, out var responseJson);
+        
         var result = JsonConvert.DeserializeObject<CreateCertificateSignRequestResponse>(responseJson);
-
         _logger.MethodExit();
         return result;
     }
@@ -162,8 +163,8 @@ public class ArubaClient : IArubaClient
             CertificateUrl = certificateUrl
         };
 
-        var response = await _httpClient.PutAsync(url,
-            new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json"));
+        using var content = GetStringContent(request);
+        var response = await _httpClient.PutAsync(url, content);
         _logger.LogDebug(
             $"Server certificate update request complete. Status code {response.StatusCode}. Successful?: {response.IsSuccessStatusCode}");
 
@@ -193,8 +194,7 @@ public class ArubaClient : IArubaClient
             ClientSecret = _clientSecret
         };
 
-        var json = JsonConvert.SerializeObject(body);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        using var content = GetStringContent(body);
 
         _logger.LogInformation($"Sending access token request to {_baseUrl}{url}");
 
@@ -206,7 +206,7 @@ public class ArubaClient : IArubaClient
         if (!response.IsSuccessStatusCode)
         {
             ReadHttpResponseContent(response, out var errorMessage);
-            
+
             throw new ArubaAuthenticationException(errorMessage);
         }
 
@@ -235,12 +235,15 @@ public class ArubaClient : IArubaClient
         }
 
         ReadHttpResponseContent(response, out var errorMessage);
-        
-        _logger.LogError($"The Aruba API request did not succeed. Status code: {response.StatusCode}. Reason: {response.ReasonPhrase}. Error: {errorMessage}");
-        _logger.LogError($"API URL that failed: {response.RequestMessage?.Method.Method} {response.RequestMessage?.RequestUri}");
-        throw new HttpRequestException($"The Aruba API request did not succeed. Status code: {response.StatusCode}. Reason: {response.ReasonPhrase}. Error: {errorMessage}");
+
+        _logger.LogError(
+            $"The Aruba API request did not succeed. Status code: {response.StatusCode}. Reason: {response.ReasonPhrase}. Error: {errorMessage}");
+        _logger.LogError(
+            $"API URL that failed: {response.RequestMessage?.Method.Method} {response.RequestMessage?.RequestUri}");
+        throw new HttpRequestException(
+            $"The Aruba API request did not succeed. Status code: {response.StatusCode}. Reason: {response.ReasonPhrase}. Error: {errorMessage}");
     }
-    
+
     private void ReadHttpResponseContent(HttpResponseMessage response, out string content)
     {
         content = "";
@@ -252,5 +255,11 @@ public class ArubaClient : IArubaClient
         {
             _logger.LogWarning($"An error occurred reading content from the Aruba API response message: {ex.Message}");
         }
+    }
+
+    private StringContent GetStringContent(object payload)
+    {
+        var json = JsonConvert.SerializeObject(payload);
+        return new StringContent(json, Encoding.UTF8, "application/json");
     }
 }
