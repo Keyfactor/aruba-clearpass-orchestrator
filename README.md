@@ -161,6 +161,44 @@ the Keyfactor Command Portal
 
    ![Aruba Custom Fields Tab](docsource/images/Aruba-custom-fields-store-type-dialog.png)
 
+
+   ###### File Server Type
+   The type of file server that the certificate will be uploaded to. The file server must be able to serve the file via HTTPS.
+
+   ![Aruba Custom Field - FileServerType](docsource/images/Aruba-custom-field-FileServerType-dialog.png)
+
+
+
+   ###### File Server Host
+   Required. The base URL for the file server host without the scheme. (i.e. my-server-name.com if the file server URL is https://my-server-name.com). See File Server Configuration section in the orchestrator documentation for more details.
+
+   ![Aruba Custom Field - FileServerHost](docsource/images/Aruba-custom-field-FileServerHost-dialog.png)
+
+
+
+   ###### File Server Username
+   Optional. The username used to access the file server. See File Server Configuration section in the orchestrator documentation for more details.
+
+   ![Aruba Custom Field - FileServerUsername](docsource/images/Aruba-custom-field-FileServerUsername-dialog.png)
+
+
+
+   ###### File Server Password
+   Optional. The password used to access the file server. See File Server Configuration section in the orchestrator documentation for more details.
+
+   ![Aruba Custom Field - FileServerPassword](docsource/images/Aruba-custom-field-FileServerPassword-dialog.png)
+
+
+
+   ###### Digest Algorithm
+   The hash digest algorithm used for the certificate signing request (CSR).
+
+   ![Aruba Custom Field - DigestAlgorithm](docsource/images/Aruba-custom-field-DigestAlgorithm-dialog.png)
+
+
+
+
+
    ##### Entry Parameters Tab
 
    | Name | Display Name | Description | Type | Default Value | Entry has a private key | Adding an entry | Removing an entry | Reenrolling an entry |
@@ -171,21 +209,28 @@ the Keyfactor Command Portal
 
    ![Aruba Entry Parameters Tab](docsource/images/Aruba-entry-parameters-store-type-dialog.png)
 
+
+   ##### SAN
+   String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>:<san_value> entries separated by comma; Example: 'DNS:www.example.com,DNS:www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA. Allowed SAN types are email, URI, DNS, RID or IP.
+
+   ![Aruba Entry Parameter - SAN](docsource/images/Aruba-entry-parameters-store-type-dialog-SAN.png)
+
+
+
    </details>
 
 ## Installation
 
 1. **Download the latest Aruba ClearPass Universal Orchestrator extension from GitHub.**
 
-    Navigate to the [Aruba ClearPass Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/aruba-clearpass-orchestrator/releases/latest). Refer to the compatibility matrix below to determine whether the `net6.0` or `net8.0` asset should be downloaded. Then, click the corresponding asset to download the zip archive.
+    Navigate to the [Aruba ClearPass Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/aruba-clearpass-orchestrator/releases/latest). Refer to the compatibility matrix below to determine the asset should be downloaded. Then, click the corresponding asset to download the zip archive.
 
    | Universal Orchestrator Version | Latest .NET version installed on the Universal Orchestrator server | `rollForward` condition in `Orchestrator.runtimeconfig.json` | `aruba-clearpass-orchestrator` .NET version to download |
    | --------- | ----------- | ----------- | ----------- |
    | Older than `11.0.0` | | | `net6.0` |
    | Between `11.0.0` and `11.5.1` (inclusive) | `net6.0` | | `net6.0` |
-   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `Disable` | `net6.0` |
-   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `LatestMajor` | `net8.0` |
-   | `11.6` _and_ newer | `net8.0` | | `net8.0` |
+   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `Disable` | `net6.0` || Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `LatestMajor` | `net8.0` |
+   | `11.6` _and_ newer | `net8.0` | | `net8.0` | 
 
     Unzip the archive containing extension assemblies to a known location.
 
